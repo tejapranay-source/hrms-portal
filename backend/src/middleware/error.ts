@@ -1,0 +1,1 @@
+import {Request,Response,NextFunction} from 'express';export const notFound=(req:Request,res:Response)=>res.status(404).json({message:`Route not found: ${req.method} ${req.originalUrl}`});export const error=(e:unknown,req:Request,res:Response,next:NextFunction)=>{console.error(e);if(res.headersSent)return next(e);res.status(500).json({message:'Internal server error'})};

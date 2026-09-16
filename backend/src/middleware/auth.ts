@@ -1,0 +1,4 @@
+import {Request,Response,NextFunction} from 'express';import jwt from 'jsonwebtoken';import {env} from '../config/env';export type Role='SUPER_ADMIN'|'HR_ADMIN'|'MANAGER'|'PAYROLL'|'EMPLOYEE';export interface UserToken{ id:number;email:string;role:Role;employeeId?:number }
+declare global{namespace Express{interface Request{user?:UserToken}}}
+export function auth(req:Request,res:Response,next:NextFunction){const h=req.headers.authorization;if(!h?.startsWith('Bearer '))return res.status(401).json({message:'Authentication required'});try{req.user=jwt.verify(h.slice(7),env.jwtSecret) as UserToken;next()}catch{return res.status(401).json({message:'Invalid or expired token'})}}
+export function role(...roles:Role[]){return(req:Request,res:Response,next:NextFunction)=>req.user&&roles.includes(req.user.role)?next():res.status(403).json({message:'Forbidden'})}
