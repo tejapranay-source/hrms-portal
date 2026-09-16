@@ -10,6 +10,7 @@ import core from './routes/core';
 import recruitment from './routes/recruitment';
 import performance from './routes/performance';
 import employeeManagement from './routes/employeeManagement';
+import settings from './routes/settings';
 
 import { notFound, error } from './middleware/error';
 
@@ -64,6 +65,7 @@ app.use(
   '/api/employee-management',
   employeeManagement
 );
+app.use('/api/settings', settings);
 
 // ==================================================
 // ERROR HANDLING
