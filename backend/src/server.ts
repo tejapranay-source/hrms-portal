@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 
@@ -8,6 +9,7 @@ import attendance from './routes/attendance';
 import core from './routes/core';
 import recruitment from './routes/recruitment';
 import performance from './routes/performance';
+import employeeManagement from './routes/employeeManagement';
 
 import { notFound, error } from './middleware/error';
 
@@ -51,6 +53,19 @@ app.use('/api/recruitment', recruitment);
 app.use('/api/performance', performance);
 
 // ==================================================
+// EMPLOYEE MANAGEMENT
+// Edit Employee
+// Employee Status Management
+// Department Management
+// Designation Management
+// ==================================================
+
+app.use(
+  '/api/employee-management',
+  employeeManagement
+);
+
+// ==================================================
 // ERROR HANDLING
 // ==================================================
 
@@ -67,3 +82,4 @@ app.listen(env.port, () => {
     `HRMS API running at http://localhost:${env.port}`
   );
 });
+

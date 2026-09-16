@@ -1,606 +1,5854 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import HRMSLayout from '../../components/HRMSLayout';
 
+const API =
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:5000/api';
+
+type IconName =
+  | 'eye'
+  | 'edit'
+  | 'status'
+  | 'users'
+  | 'building'
+  | 'briefcase'
+  | 'plus'
+  | 'refresh';
+
+function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+
+  switch (name) {
+    case 'eye':
+      return <svg {...common}><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>;
+    case 'edit':
+      return <svg {...common}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>;
+    case 'status':
+      return <svg {...common}><path d="M13 2 3 14h8l-1 8 10-12h-8Z" /></svg>;
+    case 'users':
+      return <svg {...common}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+    case 'building':
+      return <svg {...common}><path d="M3 21h18" /><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16" /><path d="M16 8h3a2 2 0 0 1 2 2v11" /><path d="M9 7h3M9 11h3M9 15h3M9 19h3" /></svg>;
+    case 'briefcase':
+      return <svg {...common}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2" /></svg>;
+    case 'plus':
+      return <svg {...common}><path d="M12 5v14M5 12h14" /></svg>;
+    case 'refresh':
+      return <svg {...common}><path d="M20 11a8.1 8.1 0 0 0-14.9-3L3 11" /><path d="M3 5v6h6" /><path d="M4 13a8.1 8.1 0 0 0 14.9 3L21 13" /><path d="M21 19v-6h-6" /></svg>;
+  }
+}
+
+
 type Employee = {
-id: string;
-user_id: string;
-employee_code: string;
-department_id: string;
-designation: string;
-manager_id: string | null;
-joining_date: string;
-employment_type: string;
-work_location: string | null;
-phone: string | null;
-address: string | null;
-status: string;
-created_at: string;
-updated_at: string;
-first_name: string;
-last_name: string;
-email: string;
-department: string;
+  id: number;
+  user_id?: number;
+  employee_code: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  department_id?: number | null;
+  department?: string | null;
+  designation?: string | null;
+  designation_id?: number | null;
+  manager_id?: number | null;
+  manager_name?: string | null;
+  joining_date?: string | null;
+  employment_type?: string | null;
+  work_location?: string | null;
+  status: string;
+  role?: string | null;
+  is_active?: boolean;
 };
 
-export default function EmployeesPage() {
-const [employees, setEmployees] = useState<Employee[]>([]);
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState('');
+type Department = {
+  id: number;
+  name: string;
+  description?: string | null;
+  employee_count?: number;
+};
 
-const [search, setSearch] = useState('');
-const [departmentFilter, setDepartmentFilter] = useState('ALL');
-const [statusFilter, setStatusFilter] = useState('ALL');
+type Designation = {
+  id: number;
+  name: string;
+  description?: string | null;
+  is_active: boolean;
+  employee_count?: number;
+};
 
-const [selectedEmployee, setSelectedEmployee] =
-useState<Employee | null>(null);
+type Manager = {
+  id: number;
+  employee_code: string;
+  name: string;
+  designation?: string | null;
+  status: string;
+};
 
-useEffect(() => {
-loadEmployees();
-}, []);
+type Pagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
-async function loadEmployees() {
-const token = localStorage.getItem('hrms_token');
+type Statistics = {
+  total: number;
+  active: number;
+  onLeave: number;
+  departments: number;
+};
 
+type EmployeesResponse = {
+  data?: Employee[];
+  employees?: Employee[];
+  pagination?: Pagination;
+  statistics?: Statistics;
+};
 
-if (!token) {
-  window.location.href = '/login';
-  return;
-}
+type ProfileData = {
+  employee?: Employee;
+  attendance?: {
+    total?: number;
+    present?: number;
+    absent?: number;
+    excused?: number;
+    workedMinutes?: number;
+    attendancePercentage?: number;
+  };
+  leave?: {
+    total?: number;
+    approved?: number;
+    pending?: number;
+    rejected?: number;
+    cancelled?: number;
+    approvedDays?: number;
+  };
+  payroll?: {
+    basicSalary?: number;
+    hra?: number;
+    allowances?: number;
+    deductions?: number;
+    grossSalary?: number;
+    totalDeductions?: number;
+    netSalary?: number;
+    payMonth?: number;
+    payYear?: number;
+    status?: string;
+  };
+  performance?: {
+    totalGoals?: number;
+    totalReviews?: number;
+    averageRating?: number | null;
+  };
+  manager?: {
+    id?: number;
+    name?: string;
+    email?: string;
+    role?: string;
+    designation?: string;
+  };
+  activity?: any[];
+};
 
-try {
-  setLoading(true);
-  setError('');
+type AddEmployeeForm = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  employeeCode: string;
+  joiningDate: string;
+  departmentId: string;
+  designationId: string;
+  managerId: string;
+  employmentType: string;
+  workLocation: string;
+  status: string;
+  loginEmail: string;
+  temporaryPassword: string;
+  role: string;
+  isActive: boolean;
+};
 
-  const response = await fetch(
-    'http://localhost:5000/api/employees',
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+type EditEmployeeForm = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
+  departmentId: string;
+  designationId: string;
+  managerId: string;
+  joiningDate: string;
+  employmentType: string;
+  workLocation: string;
+  status: string;
+};
 
-  const data = await response.json();
+type DepartmentForm = {
+  name: string;
+  description: string;
+};
 
-  if (!response.ok) {
-    setError(data.message || 'Unable to load employees.');
-    return;
+type DesignationForm = {
+  name: string;
+  description: string;
+  isActive: boolean;
+};
+
+const STATUS_OPTIONS = [
+  'ACTIVE',
+  'INACTIVE',
+  'ON_LEAVE',
+  'SUSPENDED',
+  'TERMINATED',
+];
+
+const EMPLOYMENT_TYPES = [
+  'FULL_TIME',
+  'PART_TIME',
+  'CONTRACT',
+  'INTERN',
+  'TEMPORARY',
+];
+
+const emptyAddForm: AddEmployeeForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  address: '',
+  employeeCode: '',
+  joiningDate: '',
+  departmentId: '',
+  designationId: '',
+  managerId: '',
+  employmentType: 'FULL_TIME',
+  workLocation: 'Hyderabad',
+  status: 'ACTIVE',
+  loginEmail: '',
+  temporaryPassword: 'Password@123',
+  role: 'EMPLOYEE',
+  isActive: true,
+};
+
+const emptyEditForm: EditEmployeeForm = {
+  firstName: '',
+  lastName: '',
+  phone: '',
+  address: '',
+  departmentId: '',
+  designationId: '',
+  managerId: '',
+  joiningDate: '',
+  employmentType: 'FULL_TIME',
+  workLocation: '',
+  status: 'ACTIVE',
+};
+
+const emptyDepartmentForm: DepartmentForm = {
+  name: '',
+  description: '',
+};
+
+const emptyDesignationForm: DesignationForm = {
+  name: '',
+  description: '',
+  isActive: true,
+};
+
+function getToken() {
+  if (typeof window === 'undefined') {
+    return '';
   }
 
-  setEmployees(Array.isArray(data) ? data : []);
-} catch (err) {
-  console.error('Employees loading error:', err);
-  setError('Unable to connect to the HRMS server.');
-} finally {
-  setLoading(false);
+  return localStorage.getItem('hrms_token') || '';
 }
 
-
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${getToken()}`,
+  };
 }
 
-const departments = useMemo(() => {
-return Array.from(
-new Set(employees.map((employee) => employee.department))
-);
-}, [employees]);
+async function apiRequest(
+  url: string,
+  options: RequestInit = {}
+) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...authHeaders(),
+      ...(options.headers || {}),
+    },
+  });
 
-const filteredEmployees = useMemo(() => {
-const searchValue = search.toLowerCase().trim();
+  const data = await response
+    .json()
+    .catch(() => ({}));
 
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        `Request failed with status ${response.status}`
+    );
+  }
 
-return employees.filter((employee) => {
-  const fullName =
-    `${employee.first_name} ${employee.last_name}`.toLowerCase();
+  return data;
+}
 
-  const matchesSearch =
-    !searchValue ||
-    fullName.includes(searchValue) ||
-    employee.employee_code.toLowerCase().includes(searchValue) ||
-    employee.email.toLowerCase().includes(searchValue) ||
-    employee.designation.toLowerCase().includes(searchValue);
+function formatDate(value?: string | null) {
+  if (!value) {
+    return '—';
+  }
 
-  const matchesDepartment =
-    departmentFilter === 'ALL' ||
-    employee.department === departmentFilter;
+  const date = new Date(value);
 
-  const matchesStatus =
-    statusFilter === 'ALL' ||
-    employee.status === statusFilter;
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatCurrency(value?: number) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return '₹0';
+  }
+
+  return `₹${Number(value).toLocaleString(
+    'en-IN'
+  )}`;
+}
+
+function prettyValue(
+  value?: string | null
+) {
+  if (!value) {
+    return '—';
+  }
+
+  return value
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) =>
+      letter.toUpperCase()
+    );
+}
+
+function statusClass(status: string) {
+  return (
+    'status-pill status-' +
+    status.toLowerCase()
+  );
+}
+
+export default function EmployeesPage() {
+  /*
+  |--------------------------------------------------------------------------
+  | DIRECTORY
+  |--------------------------------------------------------------------------
+  */
+  const [employees, setEmployees] =
+    useState<Employee[]>([]);
+
+  const [
+    departmentsList,
+    setDepartmentsList,
+  ] = useState<Department[]>([]);
+
+  const [
+    designationsList,
+    setDesignationsList,
+  ] = useState<Designation[]>([]);
+
+  const [
+    managersList,
+    setManagersList,
+  ] = useState<Manager[]>([]);
+
+  const [
+    employmentTypes,
+    setEmploymentTypes,
+  ] = useState<string[]>(
+    EMPLOYMENT_TYPES
+  );
+
+  const [
+    statuses,
+    setStatuses,
+  ] = useState<string[]>(
+    STATUS_OPTIONS
+  );
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState('');
+
+  const [search, setSearch] =
+    useState('');
+
+  const [
+    departmentFilter,
+    setDepartmentFilter,
+  ] = useState('');
+
+  const [
+    designationFilter,
+    setDesignationFilter,
+  ] = useState('');
+
+  const [
+    managerFilter,
+    setManagerFilter,
+  ] = useState('');
+
+  const [
+    employmentTypeFilter,
+    setEmploymentTypeFilter,
+  ] = useState('');
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState('');
+
+  const [
+    locationFilter,
+    setLocationFilter,
+  ] = useState('');
+
+  const [sortBy, setSortBy] =
+    useState('created_at');
+
+  const [sortOrder, setSortOrder] =
+    useState('desc');
+
+  const [page, setPage] =
+    useState(1);
+
+  const [limit, setLimit] =
+    useState(10);
+
+  const [
+    pagination,
+    setPagination,
+  ] = useState<Pagination>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+
+  const [
+    statistics,
+    setStatistics,
+  ] = useState<Statistics>({
+    total: 0,
+    active: 0,
+    onLeave: 0,
+    departments: 0,
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | MODALS
+  |--------------------------------------------------------------------------
+  */
+  const [showAdd, setShowAdd] =
+    useState(false);
+
+  const [showProfile, setShowProfile] =
+    useState(false);
+
+  const [showEdit, setShowEdit] =
+    useState(false);
+
+  const [
+    showDepartments,
+    setShowDepartments,
+  ] = useState(false);
+
+  const [
+    showDesignations,
+    setShowDesignations,
+  ] = useState(false);
+
+  const [
+    showStatusManager,
+    setShowStatusManager,
+  ] = useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD EMPLOYEE
+  |--------------------------------------------------------------------------
+  */
+  const [addForm, setAddForm] =
+    useState<AddEmployeeForm>(
+      emptyAddForm
+    );
+
+  const [addError, setAddError] =
+    useState('');
+
+  const [addSuccess, setAddSuccess] =
+    useState('');
+
+  const [adding, setAdding] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | EDIT EMPLOYEE
+  |--------------------------------------------------------------------------
+  */
+  const [
+    editingEmployee,
+    setEditingEmployee,
+  ] = useState<Employee | null>(null);
+
+  const [
+    editForm,
+    setEditForm,
+  ] = useState<EditEmployeeForm>(
+    emptyEditForm
+  );
+
+  const [
+    editError,
+    setEditError,
+  ] = useState('');
+
+  const [
+    editSuccess,
+    setEditSuccess,
+  ] = useState('');
+
+  const [updating, setUpdating] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROFILE
+  |--------------------------------------------------------------------------
+  */
+  const [
+    selectedEmployee,
+    setSelectedEmployee,
+  ] = useState<Employee | null>(
+    null
+  );
+
+  const [
+    profile,
+    setProfile,
+  ] = useState<ProfileData | null>(
+    null
+  );
+
+  const [
+    profileLoading,
+    setProfileLoading,
+  ] = useState(false);
+
+  const [
+    profileError,
+    setProfileError,
+  ] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | STATUS
+  |--------------------------------------------------------------------------
+  */
+  const [
+    statusEmployee,
+    setStatusEmployee,
+  ] = useState<Employee | null>(
+    null
+  );
+
+  const [
+    newStatus,
+    setNewStatus,
+  ] = useState('ACTIVE');
+
+  const [
+    statusSaving,
+    setStatusSaving,
+  ] = useState(false);
+
+  const [
+    statusError,
+    setStatusError,
+  ] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | DEPARTMENT MANAGEMENT
+  |--------------------------------------------------------------------------
+  */
+  const [
+    departmentForm,
+    setDepartmentForm,
+  ] = useState<DepartmentForm>(
+    emptyDepartmentForm
+  );
+
+  const [
+    departmentEditingId,
+    setDepartmentEditingId,
+  ] = useState<number | null>(
+    null
+  );
+
+  const [
+    departmentError,
+    setDepartmentError,
+  ] = useState('');
+
+  const [
+    departmentSuccess,
+    setDepartmentSuccess,
+  ] = useState('');
+
+  const [
+    departmentSaving,
+    setDepartmentSaving,
+  ] = useState(false);
+
+  const [
+    departmentAssignEmployee,
+    setDepartmentAssignEmployee,
+  ] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | DESIGNATION MANAGEMENT
+  |--------------------------------------------------------------------------
+  */
+  const [
+    designationForm,
+    setDesignationForm,
+  ] = useState<DesignationForm>(
+    emptyDesignationForm
+  );
+
+  const [
+    designationEditingId,
+    setDesignationEditingId,
+  ] = useState<number | null>(
+    null
+  );
+
+  const [
+    designationError,
+    setDesignationError,
+  ] = useState('');
+
+  const [
+    designationSuccess,
+    setDesignationSuccess,
+  ] = useState('');
+
+  const [
+    designationSaving,
+    setDesignationSaving,
+  ] = useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD OPTIONS
+  |--------------------------------------------------------------------------
+  */
+  async function loadOptions() {
+    try {
+      const data =
+        await apiRequest(
+          `${API}/employee-management/options`
+        );
+
+      setDepartmentsList(
+        data.departments || []
+      );
+
+      setDesignationsList(
+        data.designations || []
+      );
+
+      setManagersList(
+        data.managers || []
+      );
+
+      if (
+        Array.isArray(
+          data.employmentTypes
+        )
+      ) {
+        setEmploymentTypes(
+          data.employmentTypes
+        );
+      }
+
+      if (
+        Array.isArray(
+          data.statuses
+        )
+      ) {
+        setStatuses(data.statuses);
+      }
+    } catch (err) {
+      console.error(
+        'Options error:',
+        err
+      );
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD EMPLOYEES
+  |--------------------------------------------------------------------------
+  */
+  async function loadEmployees() {
+    setLoading(true);
+    setError('');
+
+    try {
+      const params =
+        new URLSearchParams();
+
+      params.set(
+        'page',
+        String(page)
+      );
+
+      params.set(
+        'limit',
+        String(limit)
+      );
+
+      if (search.trim()) {
+        params.set(
+          'search',
+          search.trim()
+        );
+      }
+
+      if (departmentFilter) {
+        params.set(
+          'departmentId',
+          departmentFilter
+        );
+      }
+
+      if (designationFilter) {
+        params.set(
+          'designation',
+          designationFilter
+        );
+      }
+
+      if (managerFilter) {
+        params.set(
+          'managerId',
+          managerFilter
+        );
+      }
+
+      if (employmentTypeFilter) {
+        params.set(
+          'employmentType',
+          employmentTypeFilter
+        );
+      }
+
+      if (statusFilter) {
+        params.set(
+          'status',
+          statusFilter
+        );
+      }
+
+      if (locationFilter) {
+        params.set(
+          'workLocation',
+          locationFilter
+        );
+      }
+
+      params.set('sortBy', sortBy);
+      params.set(
+        'sortOrder',
+        sortOrder
+      );
+
+      const data: EmployeesResponse =
+        await apiRequest(
+          `${API}/employees?${params.toString()}`
+        );
+
+      const employeeData =
+        data.data ||
+        data.employees ||
+        [];
+
+      setEmployees(employeeData);
+
+      if (data.pagination) {
+        setPagination(
+          data.pagination
+        );
+      }
+
+      if (data.statistics) {
+        setStatistics(
+          data.statistics
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load employees'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD DEPARTMENTS
+  |--------------------------------------------------------------------------
+  */
+  async function loadDepartments() {
+    try {
+      const data =
+        await apiRequest(
+          `${API}/employee-management/departments`
+        );
+
+      setDepartmentsList(
+        Array.isArray(data)
+          ? data
+          : data.departments || []
+      );
+    } catch (err) {
+      console.error(
+        'Departments error:',
+        err
+      );
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD DESIGNATIONS
+  |--------------------------------------------------------------------------
+  */
+  async function loadDesignations() {
+    try {
+      const data =
+        await apiRequest(
+          `${API}/employee-management/designations`
+        );
+
+      setDesignationsList(
+        Array.isArray(data)
+          ? data
+          : data.designations || []
+      );
+    } catch (err) {
+      console.error(
+        'Designations error:',
+        err
+      );
+    }
+  }
+
+  useEffect(() => {
+    loadOptions();
+  }, []);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [
+    page,
+    limit,
+    search,
+    departmentFilter,
+    designationFilter,
+    managerFilter,
+    employmentTypeFilter,
+    statusFilter,
+    locationFilter,
+    sortBy,
+    sortOrder,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOCATIONS
+  |--------------------------------------------------------------------------
+  */
+  const locations = useMemo(() => {
+    return Array.from(
+      new Set(
+        employees
+          .map(
+            (employee) =>
+              employee.work_location
+          )
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [employees]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD EMPLOYEE
+  |--------------------------------------------------------------------------
+  */
+  async function addEmployee(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    setAdding(true);
+    setAddError('');
+    setAddSuccess('');
+
+    try {
+      const response =
+        await apiRequest(
+          `${API}/employees`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              firstName:
+                addForm.firstName,
+              lastName:
+                addForm.lastName,
+              email:
+                addForm.email,
+              phone:
+                addForm.phone,
+              address:
+                addForm.address,
+              employeeCode:
+                addForm.employeeCode,
+              joiningDate:
+                addForm.joiningDate,
+              departmentId:
+                addForm.departmentId
+                  ? Number(
+                      addForm.departmentId
+                    )
+                  : null,
+              designationId:
+                addForm.designationId
+                  ? Number(
+                      addForm.designationId
+                    )
+                  : null,
+              designation:
+                addForm.designationId
+                  ? designationsList.find(
+                      (item) =>
+                        String(
+                          item.id
+                        ) ===
+                        addForm.designationId
+                    )?.name
+                  : null,
+              managerId:
+                addForm.managerId
+                  ? Number(
+                      addForm.managerId
+                    )
+                  : null,
+              employmentType:
+                addForm.employmentType,
+              workLocation:
+                addForm.workLocation,
+              status:
+                addForm.status,
+              loginEmail:
+                addForm.loginEmail ||
+                addForm.email,
+              temporaryPassword:
+                addForm.temporaryPassword,
+              role:
+                addForm.role,
+              isActive:
+                addForm.isActive,
+            }),
+          }
+        );
+
+      setAddSuccess(
+        response.message ||
+          'Employee created successfully'
+      );
+
+      setAddForm(
+        emptyAddForm
+      );
+
+      await loadOptions();
+      await loadEmployees();
+
+      setTimeout(() => {
+        setShowAdd(false);
+        setAddSuccess('');
+      }, 900);
+    } catch (err) {
+      setAddError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to create employee'
+      );
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROFILE
+  |--------------------------------------------------------------------------
+  */
+  async function openProfile(
+    employee: Employee
+  ) {
+    setSelectedEmployee(
+      employee
+    );
+
+    setProfile(null);
+    setProfileError('');
+    setProfileLoading(true);
+    setShowProfile(true);
+
+    try {
+      const data =
+        await apiRequest(
+          `${API}/employees/${employee.id}/profile`
+        );
+
+      setProfile(
+        data.data || data
+      );
+    } catch (err) {
+      setProfileError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load profile'
+      );
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | EDIT EMPLOYEE
+  |--------------------------------------------------------------------------
+  */
+  function openEditEmployee(
+    employee: Employee
+  ) {
+    setEditingEmployee(
+      employee
+    );
+
+    const matchingDesignation =
+      employee.designation_id
+        ? String(
+            employee.designation_id
+          )
+        : designationsList.find(
+            (item) =>
+              item.name.toLowerCase() ===
+              (
+                employee.designation ||
+                ''
+              ).toLowerCase()
+          )?.id
+          ? String(
+              designationsList.find(
+                (item) =>
+                  item.name.toLowerCase() ===
+                  (
+                    employee.designation ||
+                    ''
+                  ).toLowerCase()
+              )!.id
+            )
+          : '';
+
+    setEditForm({
+      firstName:
+        employee.first_name || '',
+      lastName:
+        employee.last_name || '',
+      phone:
+        employee.phone || '',
+      address:
+        employee.address || '',
+      departmentId:
+        employee.department_id
+          ? String(
+              employee.department_id
+            )
+          : '',
+      designationId:
+        matchingDesignation,
+      managerId:
+        employee.manager_id
+          ? String(
+              employee.manager_id
+            )
+          : '',
+      joiningDate:
+        employee.joining_date
+          ? employee.joining_date.slice(
+              0,
+              10
+            )
+          : '',
+      employmentType:
+        employee.employment_type ||
+        'FULL_TIME',
+      workLocation:
+        employee.work_location ||
+        '',
+      status:
+        employee.status ||
+        'ACTIVE',
+    });
+
+    setEditError('');
+    setEditSuccess('');
+    setShowEdit(true);
+  }
+
+  async function updateEmployee(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (!editingEmployee) {
+      return;
+    }
+
+    setUpdating(true);
+    setEditError('');
+    setEditSuccess('');
+
+    try {
+      const response =
+        await apiRequest(
+          `${API}/employee-management/employees/${editingEmployee.id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              firstName:
+                editForm.firstName,
+              lastName:
+                editForm.lastName,
+              phone:
+                editForm.phone,
+              address:
+                editForm.address,
+              departmentId:
+                editForm.departmentId
+                  ? Number(
+                      editForm.departmentId
+                    )
+                  : null,
+              designationId:
+                editForm.designationId
+                  ? Number(
+                      editForm.designationId
+                    )
+                  : null,
+              managerId:
+                editForm.managerId
+                  ? Number(
+                      editForm.managerId
+                    )
+                  : null,
+              joiningDate:
+                editForm.joiningDate ||
+                null,
+              employmentType:
+                editForm.employmentType,
+              workLocation:
+                editForm.workLocation,
+              status:
+                editForm.status,
+            }),
+          }
+        );
+
+      setEditSuccess(
+        response.message ||
+          'Employee updated successfully'
+      );
+
+      await loadOptions();
+      await loadDepartments();
+      await loadDesignations();
+      await loadEmployees();
+
+      setTimeout(() => {
+        setShowEdit(false);
+        setEditSuccess('');
+      }, 900);
+    } catch (err) {
+      setEditError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update employee'
+      );
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | STATUS MANAGEMENT
+  |--------------------------------------------------------------------------
+  */
+  function openStatusManager(
+    employee: Employee
+  ) {
+    setStatusEmployee(
+      employee
+    );
+
+    setNewStatus(
+      employee.status
+    );
+
+    setStatusError('');
+    setShowStatusManager(true);
+  }
+
+  async function saveEmployeeStatus() {
+    if (!statusEmployee) {
+      return;
+    }
+
+    setStatusSaving(true);
+    setStatusError('');
+
+    try {
+      await apiRequest(
+        `${API}/employee-management/employees/${statusEmployee.id}/status`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
+
+      await loadEmployees();
+      await loadOptions();
+
+      setShowStatusManager(false);
+      setStatusEmployee(null);
+    } catch (err) {
+      setStatusError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update status'
+      );
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | DEPARTMENT MANAGEMENT
+  |--------------------------------------------------------------------------
+  */
+  function startEditDepartment(
+    department: Department
+  ) {
+    setDepartmentEditingId(
+      department.id
+    );
+
+    setDepartmentForm({
+      name: department.name,
+      description:
+        department.description ||
+        '',
+    });
+
+    setDepartmentError('');
+    setDepartmentSuccess('');
+  }
+
+  function cancelDepartmentEdit() {
+    setDepartmentEditingId(null);
+
+    setDepartmentForm(
+      emptyDepartmentForm
+    );
+  }
+
+  async function saveDepartment(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (
+      !departmentForm.name.trim()
+    ) {
+      setDepartmentError(
+        'Department name is required'
+      );
+
+      return;
+    }
+
+    setDepartmentSaving(true);
+    setDepartmentError('');
+    setDepartmentSuccess('');
+
+    try {
+      if (
+        departmentEditingId
+      ) {
+        await apiRequest(
+          `${API}/employee-management/departments/${departmentEditingId}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify(
+              departmentForm
+            ),
+          }
+        );
+
+        setDepartmentSuccess(
+          'Department updated successfully'
+        );
+      } else {
+        await apiRequest(
+          `${API}/employee-management/departments`,
+          {
+            method: 'POST',
+            body: JSON.stringify(
+              departmentForm
+            ),
+          }
+        );
+
+        setDepartmentSuccess(
+          'Department created successfully'
+        );
+      }
+
+      setDepartmentForm(
+        emptyDepartmentForm
+      );
+
+      setDepartmentEditingId(null);
+
+      await loadDepartments();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDepartmentError(
+        err instanceof Error
+          ? err.message
+          : 'Department operation failed'
+      );
+    } finally {
+      setDepartmentSaving(false);
+    }
+  }
+
+  async function deleteDepartment(
+    department: Department
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete department "${department.name}"?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDepartmentError('');
+    setDepartmentSuccess('');
+
+    try {
+      await apiRequest(
+        `${API}/employee-management/departments/${department.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      setDepartmentSuccess(
+        'Department deleted successfully'
+      );
+
+      await loadDepartments();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDepartmentError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete department'
+      );
+    }
+  }
+
+  async function assignDepartment(
+    employeeId: number
+  ) {
+    if (
+      !departmentAssignEmployee
+    ) {
+      return;
+    }
+
+    try {
+      await apiRequest(
+        `${API}/employee-management/employees/${employeeId}/department`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            departmentId:
+              Number(
+                departmentAssignEmployee
+              ),
+          }),
+        }
+      );
+
+      setDepartmentSuccess(
+        'Employee assigned successfully'
+      );
+
+      setDepartmentAssignEmployee(
+        ''
+      );
+
+      await loadDepartments();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDepartmentError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to assign department'
+      );
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | DESIGNATION MANAGEMENT
+  |--------------------------------------------------------------------------
+  */
+  function startEditDesignation(
+    designation: Designation
+  ) {
+    setDesignationEditingId(
+      designation.id
+    );
+
+    setDesignationForm({
+      name: designation.name,
+      description:
+        designation.description ||
+        '',
+      isActive:
+        designation.is_active,
+    });
+
+    setDesignationError('');
+    setDesignationSuccess('');
+  }
+
+  function cancelDesignationEdit() {
+    setDesignationEditingId(null);
+
+    setDesignationForm(
+      emptyDesignationForm
+    );
+  }
+
+  async function saveDesignation(
+    event: FormEvent
+  ) {
+    event.preventDefault();
+
+    if (
+      !designationForm.name.trim()
+    ) {
+      setDesignationError(
+        'Designation name is required'
+      );
+
+      return;
+    }
+
+    setDesignationSaving(true);
+    setDesignationError('');
+    setDesignationSuccess('');
+
+    try {
+      if (
+        designationEditingId
+      ) {
+        await apiRequest(
+          `${API}/employee-management/designations/${designationEditingId}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              name:
+                designationForm.name,
+              description:
+                designationForm.description,
+              isActive:
+                designationForm.isActive,
+            }),
+          }
+        );
+
+        setDesignationSuccess(
+          'Designation updated successfully'
+        );
+      } else {
+        await apiRequest(
+          `${API}/employee-management/designations`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              name:
+                designationForm.name,
+              description:
+                designationForm.description,
+            }),
+          }
+        );
+
+        setDesignationSuccess(
+          'Designation created successfully'
+        );
+      }
+
+      setDesignationForm(
+        emptyDesignationForm
+      );
+
+      setDesignationEditingId(null);
+
+      await loadDesignations();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDesignationError(
+        err instanceof Error
+          ? err.message
+          : 'Designation operation failed'
+      );
+    } finally {
+      setDesignationSaving(false);
+    }
+  }
+
+  async function toggleDesignation(
+    designation: Designation
+  ) {
+    try {
+      await apiRequest(
+        `${API}/employee-management/designations/${designation.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: designation.name,
+            description:
+              designation.description ||
+              '',
+            isActive:
+              !designation.is_active,
+          }),
+        }
+      );
+
+      await loadDesignations();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDesignationError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update designation'
+      );
+    }
+  }
+
+  async function deleteDesignation(
+    designation: Designation
+  ) {
+    const confirmed =
+      window.confirm(
+        `Delete designation "${designation.name}"?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDesignationError('');
+    setDesignationSuccess('');
+
+    try {
+      await apiRequest(
+        `${API}/employee-management/designations/${designation.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      setDesignationSuccess(
+        'Designation deleted successfully'
+      );
+
+      await loadDesignations();
+      await loadOptions();
+      await loadEmployees();
+    } catch (err) {
+      setDesignationError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete designation'
+      );
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | FILTERS
+  |--------------------------------------------------------------------------
+  */
+  function clearFilters() {
+    setSearch('');
+    setDepartmentFilter('');
+    setDesignationFilter('');
+    setManagerFilter('');
+    setEmploymentTypeFilter('');
+    setStatusFilter('');
+    setLocationFilter('');
+    setSortBy('created_at');
+    setSortOrder('desc');
+    setPage(1);
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CURRENT PAGE STATISTICS
+  |--------------------------------------------------------------------------
+  */
+  const currentActive =
+    employees.filter(
+      (employee) =>
+        employee.status ===
+        'ACTIVE'
+    ).length;
+
+  const currentOnLeave =
+    employees.filter(
+      (employee) =>
+        employee.status ===
+        'ON_LEAVE'
+    ).length;
 
   return (
-    matchesSearch &&
-    matchesDepartment &&
-    matchesStatus
-  );
-});
+    <HRMSLayout title="Employees">
+      <div className="page">
+        {/* HEADER */}
+        <div className="page-header">
+          <div>
+            <h2>Employee Management</h2>
+            <p>
+              Manage employees, departments,
+              designations and employee status.
+            </p>
+          </div>
 
-
-}, [employees, search, departmentFilter, statusFilter]);
-
-const activeEmployees = employees.filter(
-(employee) => employee.status === 'ACTIVE'
-).length;
-
-const inactiveEmployees = employees.filter(
-(employee) => employee.status !== 'ACTIVE'
-).length;
-
-function formatDate(value: string) {
-return new Date(value).toLocaleDateString([], {
-day: '2-digit',
-month: 'short',
-year: 'numeric',
-});
-}
-
-function getInitials(employee: Employee) {
-return `${employee.first_name.charAt(0)}${employee.last_name.charAt(
-      0
-    )}`.toUpperCase();
-}
-
-function formatEmploymentType(value: string) {
-return value
-.replace(/_/g, ' ')
-.toLowerCase()
-.replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-return ( <HRMSLayout title="Employees"> <div className="employees-container">
-
-```
-    <section className="employees-header">
-      <div>
-        <p className="eyebrow employees-eyebrow">
-          PEOPLE MANAGEMENT
-        </p>
-
-        <h2>Employees</h2>
-
-        <p>
-          Manage employee information, departments and employment
-          details.
-        </p>
-      </div>
-
-      <button
-        className="add-employee-button"
-        onClick={() =>
-          alert(
-            'Employee creation will be connected to the backend next.'
-          )
-        }
-      >
-        + Add Employee
-      </button>
-    </section>
-
-    <section className="employee-summary-grid">
-
-      <div className="employee-summary-card">
-        <div className="employee-summary-icon blue">
-          👥
-        </div>
-
-        <div>
-          <span>Total Employees</span>
-          <strong>
-            {loading ? '...' : employees.length}
-          </strong>
-        </div>
-      </div>
-
-      <div className="employee-summary-card">
-        <div className="employee-summary-icon green">
-          ✓
-        </div>
-
-        <div>
-          <span>Active Employees</span>
-          <strong>
-            {loading ? '...' : activeEmployees}
-          </strong>
-        </div>
-      </div>
-
-      <div className="employee-summary-card">
-        <div className="employee-summary-icon orange">
-          ◷
-        </div>
-
-        <div>
-          <span>Inactive Employees</span>
-          <strong>
-            {loading ? '...' : inactiveEmployees}
-          </strong>
-        </div>
-      </div>
-
-      <div className="employee-summary-card">
-        <div className="employee-summary-icon purple">
-          🏢
-        </div>
-
-        <div>
-          <span>Departments</span>
-          <strong>
-            {loading ? '...' : departments.length}
-          </strong>
-        </div>
-      </div>
-
-    </section>
-
-    <section className="employees-card">
-
-      <div className="employees-card-header">
-        <div>
-          <h3>Employee Directory</h3>
-
-          <p>
-            View and manage your organization's employees.
-          </p>
-        </div>
-
-        <span className="employee-count">
-          {filteredEmployees.length} employees
-        </span>
-      </div>
-
-      <div className="employee-filters">
-
-        <div className="employee-search">
-          <span>🔍</span>
-
-          <input
-            type="text"
-            placeholder="Search by name, code, email or designation..."
-            value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
-          />
-        </div>
-
-        <select
-          value={departmentFilter}
-          onChange={(event) =>
-            setDepartmentFilter(event.target.value)
-          }
-        >
-          <option value="ALL">
-            All Departments
-          </option>
-
-          {departments.map((department) => (
-            <option
-              key={department}
-              value={department}
+          <div className="header-actions">
+            <button
+              className="secondary-button"
+              onClick={() =>
+                setShowStatusManager(true)
+              }
             >
-              {department}
-            </option>
-          ))}
-        </select>
+              <Icon name="status" size={16} /> Status Management
+            </button>
 
-        <select
-          value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value)
-          }
-        >
-          <option value="ALL">
-            All Status
-          </option>
+            <button
+              className="secondary-button"
+              onClick={() =>
+                setShowDepartments(true)
+              }
+            >
+              <Icon name="building" size={16} /> Departments
+            </button>
 
-          <option value="ACTIVE">
-            Active
-          </option>
+            <button
+              className="secondary-button"
+              onClick={() =>
+                setShowDesignations(true)
+              }
+            >
+              <Icon name="briefcase" size={16} /> Designations
+            </button>
 
-          <option value="INACTIVE">
-            Inactive
-          </option>
-        </select>
-
-      </div>
-
-      {error && (
-        <div className="employee-error">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-
-        <div className="employees-loading">
-          <div className="loading-spinner"></div>
-          <p>Loading employees...</p>
+            <button
+              className="primary-button"
+              onClick={() => {
+                setAddForm(
+                  emptyAddForm
+                );
+                setAddError('');
+                setAddSuccess('');
+                setShowAdd(true);
+              }}
+            >
+              <Icon name="plus" size={16} /> Add Employee
+            </button>
+          </div>
         </div>
 
-      ) : filteredEmployees.length === 0 ? (
+        {/* STATISTICS */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon"><Icon name="users" size={20} /></div>
+            <div>
+              <span>Total Employees</span>
+              <strong>
+                {statistics.total ||
+                  pagination.total ||
+                  0}
+              </strong>
+            </div>
+          </div>
 
-        <div className="employees-empty">
-          <div>👥</div>
-          <h3>No employees found</h3>
-          <p>
-            Try changing your search or filter options.
-          </p>
+          <div className="stat-card">
+            <div className="stat-icon active-icon">
+              ✓
+            </div>
+            <div>
+              <span>Active</span>
+              <strong>
+                {statistics.active ||
+                  currentActive}
+              </strong>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon leave-icon">
+              ◷
+            </div>
+            <div>
+              <span>On Leave</span>
+              <strong>
+                {statistics.onLeave ||
+                  currentOnLeave}
+              </strong>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon dept-icon">
+              <Icon name="building" size={20} />
+            </div>
+            <div>
+              <span>Departments</span>
+              <strong>
+                {statistics.departments ||
+                  departmentsList.length}
+              </strong>
+            </div>
+          </div>
         </div>
 
-      ) : (
+        {/* FILTERS */}
+        <div className="card filters-card">
+          <div className="filters-grid">
+            <div className="field search-field">
+              <label>Search</label>
+              <input
+                value={search}
+                onChange={(event) => {
+                  setSearch(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+                placeholder="Name, email or employee code..."
+              />
+            </div>
 
-        <div className="employee-table-wrapper">
+            <div className="field">
+              <label>Department</label>
+              <select
+                value={
+                  departmentFilter
+                }
+                onChange={(event) => {
+                  setDepartmentFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Departments
+                </option>
 
-          <table className="employee-table">
-
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Employee ID</th>
-                <th>Department</th>
-                <th>Designation</th>
-                <th>Employment</th>
-                <th>Location</th>
-                <th>Joined</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {filteredEmployees.map((employee) => (
-
-                <tr key={employee.id}>
-
-                  <td>
-                    <div className="employee-name-cell">
-
-                      <div className="employee-avatar">
-                        {getInitials(employee)}
-                      </div>
-
-                      <div>
-                        <strong>
-                          {employee.first_name}{' '}
-                          {employee.last_name}
-                        </strong>
-
-                        <span>
-                          {employee.email}
-                        </span>
-                      </div>
-
-                    </div>
-                  </td>
-
-                  <td>
-                    <span className="employee-code">
-                      {employee.employee_code}
-                    </span>
-                  </td>
-
-                  <td>
-                    {employee.department}
-                  </td>
-
-                  <td>
-                    {employee.designation}
-                  </td>
-
-                  <td>
-                    {formatEmploymentType(
-                      employee.employment_type
-                    )}
-                  </td>
-
-                  <td>
-                    {employee.work_location || '—'}
-                  </td>
-
-                  <td>
-                    {formatDate(
-                      employee.joining_date
-                    )}
-                  </td>
-
-                  <td>
-                    <span
-                      className={`employee-status ${
-                        employee.status === 'ACTIVE'
-                          ? 'active'
-                          : 'inactive'
-                      }`}
-                    >
-                      <span className="status-circle">
-                        ●
-                      </span>
-
-                      {employee.status}
-                    </span>
-                  </td>
-
-                  <td>
-                    <button
-                      className="view-employee-button"
-                      onClick={() =>
-                        setSelectedEmployee(employee)
+                {departmentsList.map(
+                  (department) => (
+                    <option
+                      key={
+                        department.id
+                      }
+                      value={
+                        department.id
                       }
                     >
-                      View
-                    </button>
-                  </td>
+                      {department.name}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
 
-                </tr>
+            <div className="field">
+              <label>Designation</label>
+              <select
+                value={
+                  designationFilter
+                }
+                onChange={(event) => {
+                  setDesignationFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Designations
+                </option>
 
-              ))}
+                {designationsList
+                  .filter(
+                    (item) =>
+                      item.is_active
+                  )
+                  .map(
+                    (designation) => (
+                      <option
+                        key={
+                          designation.id
+                        }
+                        value={
+                          designation.name
+                        }
+                      >
+                        {designation.name}
+                      </option>
+                    )
+                  )}
+              </select>
+            </div>
 
-            </tbody>
+            <div className="field">
+              <label>Manager</label>
+              <select
+                value={managerFilter}
+                onChange={(event) => {
+                  setManagerFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Managers
+                </option>
 
-          </table>
+                {managersList.map(
+                  (manager) => (
+                    <option
+                      key={manager.id}
+                      value={manager.id}
+                    >
+                      {manager.name}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
 
+            <div className="field">
+              <label>Employment Type</label>
+              <select
+                value={
+                  employmentTypeFilter
+                }
+                onChange={(event) => {
+                  setEmploymentTypeFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Types
+                </option>
+
+                {employmentTypes.map(
+                  (type) => (
+                    <option
+                      key={type}
+                      value={type}
+                    >
+                      {prettyValue(type)}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Status</label>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Statuses
+                </option>
+
+                {statuses.map(
+                  (status) => (
+                    <option
+                      key={status}
+                      value={status}
+                    >
+                      {prettyValue(status)}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Location</label>
+              <select
+                value={locationFilter}
+                onChange={(event) => {
+                  setLocationFilter(
+                    event.target.value
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">
+                  All Locations
+                </option>
+
+                {locations.map(
+                  (location) => (
+                    <option
+                      key={location}
+                      value={location}
+                    >
+                      {location}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Sort</label>
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  setSortBy(
+                    event.target.value
+                  )
+                }
+              >
+                <option value="created_at">
+                  Created Date
+                </option>
+                <option value="first_name">
+                  Name
+                </option>
+                <option value="employee_code">
+                  Employee Code
+                </option>
+                <option value="joining_date">
+                  Joining Date
+                </option>
+                <option value="status">
+                  Status
+                </option>
+              </select>
+            </div>
+
+            <div className="filter-actions">
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  setSortOrder(
+                    sortOrder ===
+                      'asc'
+                      ? 'desc'
+                      : 'asc'
+                  )
+                }
+              >
+                {sortOrder ===
+                'asc'
+                  ? '↑ Asc'
+                  : '↓ Desc'}
+              </button>
+
+              <button
+                className="clear-button"
+                onClick={
+                  clearFilters
+                }
+              >
+                Clear
+              </button>
+            </div>
+          </div>
         </div>
 
-      )}
-
-    </section>
-
-    {selectedEmployee && (
-
-      <div
-        className="employee-modal-overlay"
-        onClick={() =>
-          setSelectedEmployee(null)
-        }
-      >
-
-        <div
-          className="employee-modal"
-          onClick={(event) =>
-            event.stopPropagation()
-          }
-        >
-
-          <div className="employee-modal-header">
-
+        {/* DIRECTORY */}
+        <div className="card directory-card">
+          <div className="section-header">
             <div>
-              <h3>Employee Details</h3>
-
-              <p>
-                Complete employee information
-              </p>
+              <h3>Employee Directory</h3>
+              <span>
+                {pagination.total ||
+                  employees.length}{' '}
+                employees found
+              </span>
             </div>
 
             <button
-              className="modal-close-button"
-              onClick={() =>
-                setSelectedEmployee(null)
-              }
+              className="refresh-button"
+              onClick={() => {
+                loadOptions();
+                loadDepartments();
+                loadDesignations();
+                loadEmployees();
+              }}
             >
-              ×
+              ↻ Refresh
             </button>
-
           </div>
 
-          <div className="employee-profile-header">
+          {error && (
+            <div className="error-box">
+              {error}
+            </div>
+          )}
 
-            <div className="large-employee-avatar">
-              {getInitials(selectedEmployee)}
+          {loading ? (
+            <div className="loading">
+              Loading employees...
+            </div>
+          ) : employees.length ===
+            0 ? (
+            <div className="empty">
+              No employees found.
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Employee Code</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Manager</th>
+                    <th>Employment</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {employees.map(
+                    (employee) => (
+                      <tr
+                        key={
+                          employee.id
+                        }
+                      >
+                        <td>
+                          <button
+                            className="employee-link"
+                            onClick={() =>
+                              openProfile(
+                                employee
+                              )
+                            }
+                          >
+                            <div className="employee-avatar">
+                              {(
+                                employee.first_name ||
+                                'U'
+                              )
+                                .charAt(0)
+                                .toUpperCase()}
+                            </div>
+
+                            <div>
+                              <strong>
+                                {
+                                  employee.first_name
+                                }{' '}
+                                {
+                                  employee.last_name
+                                }
+                              </strong>
+
+                              <span>
+                                {
+                                  employee.email
+                                }
+                              </span>
+                            </div>
+                          </button>
+                        </td>
+
+                        <td>
+                          {
+                            employee.employee_code
+                          }
+                        </td>
+
+                        <td>
+                          {employee.department ||
+                            '—'}
+                        </td>
+
+                        <td>
+                          {employee.designation ||
+                            '—'}
+                        </td>
+
+                        <td>
+                          {employee.manager_name ||
+                            '—'}
+                        </td>
+
+                        <td>
+                          {prettyValue(
+                            employee.employment_type
+                          )}
+                        </td>
+
+                        <td>
+                          <span
+                            className={statusClass(
+                              employee.status
+                            )}
+                          >
+                            {prettyValue(
+                              employee.status
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          {employee.work_location ||
+                            '—'}
+                        </td>
+
+                        <td>
+                          <div className="row-actions">
+                            <button
+                              type="button"
+                              className="row-action-button view-action"
+                              title="View profile"
+                              aria-label={`View ${employee.first_name} ${employee.last_name} profile`}
+                              onClick={() =>
+                                openProfile(
+                                  employee
+                                )
+                              }
+                            >
+                              <Icon name="eye" size={17} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className="row-action-button edit-action"
+                              title="Edit employee"
+                              aria-label={`Edit ${employee.first_name} ${employee.last_name}`}
+                              onClick={() =>
+                                openEditEmployee(
+                                  employee
+                                )
+                              }
+                            >
+                              <Icon name="edit" size={17} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className="row-action-button status-action"
+                              title="Change status"
+                              aria-label={`Change ${employee.first_name} ${employee.last_name} status`}
+                              onClick={() =>
+                                openStatusManager(
+                                  employee
+                                )
+                              }
+                            >
+                              <Icon name="status" size={17} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* PAGINATION */}
+          <div className="pagination">
+            <div>
+              Showing{' '}
+              {employees.length > 0
+                ? (page - 1) *
+                    limit +
+                  1
+                : 0}{' '}
+              to{' '}
+              {Math.min(
+                page * limit,
+                pagination.total
+              )}{' '}
+              of{' '}
+              {pagination.total}{' '}
+              employees
             </div>
 
-            <div>
-
-              <h2>
-                {selectedEmployee.first_name}{' '}
-                {selectedEmployee.last_name}
-              </h2>
-
-              <p>
-                {selectedEmployee.designation}
-              </p>
-
-              <span
-                className={`employee-status ${
-                  selectedEmployee.status === 'ACTIVE'
-                    ? 'active'
-                    : 'inactive'
-                }`}
+            <div className="pagination-controls">
+              <select
+                value={limit}
+                onChange={(event) => {
+                  setLimit(
+                    Number(
+                      event.target.value
+                    )
+                  );
+                  setPage(1);
+                }}
               >
-                <span className="status-circle">
-                  ●
-                </span>
+                <option value={10}>
+                  10 / page
+                </option>
+                <option value={20}>
+                  20 / page
+                </option>
+                <option value={50}>
+                  50 / page
+                </option>
+              </select>
 
-                {selectedEmployee.status}
+              <button
+                disabled={page <= 1}
+                onClick={() =>
+                  setPage(
+                    (current) =>
+                      current - 1
+                  )
+                }
+              >
+                ←
+              </button>
+
+              <span>
+                {page} /{' '}
+                {pagination.totalPages ||
+                  1}
               </span>
 
+              <button
+                disabled={
+                  page >=
+                  (pagination.totalPages ||
+                    1)
+                }
+                onClick={() =>
+                  setPage(
+                    (current) =>
+                      current + 1
+                  )
+                }
+              >
+                →
+              </button>
             </div>
-
           </div>
-
-          <div className="employee-details-grid">
-
-            <div className="detail-item">
-              <span>Employee ID</span>
-              <strong>
-                {selectedEmployee.employee_code}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Email</span>
-              <strong>
-                {selectedEmployee.email}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Department</span>
-              <strong>
-                {selectedEmployee.department}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Designation</span>
-              <strong>
-                {selectedEmployee.designation}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Employment Type</span>
-              <strong>
-                {formatEmploymentType(
-                  selectedEmployee.employment_type
-                )}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Joining Date</span>
-              <strong>
-                {formatDate(
-                  selectedEmployee.joining_date
-                )}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Work Location</span>
-              <strong>
-                {selectedEmployee.work_location ||
-                  'Not specified'}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Phone</span>
-              <strong>
-                {selectedEmployee.phone ||
-                  'Not specified'}
-              </strong>
-            </div>
-
-            <div className="detail-item">
-              <span>Address</span>
-              <strong>
-                {selectedEmployee.address ||
-                  'Not specified'}
-              </strong>
-            </div>
-
-          </div>
-
         </div>
-
       </div>
 
-    )}
+      {/* ================================================================ */}
+      {/* ADD EMPLOYEE MODAL */}
+      {/* ================================================================ */}
+      {showAdd && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShowAdd(false)
+          }
+        >
+          <div
+            className="modal large-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <h2>Add Employee</h2>
+                <p>
+                  Create employee and login
+                  account.
+                </p>
+              </div>
 
-  </div>
-</HRMSLayout>
+              <button
+                className="close-button"
+                onClick={() =>
+                  setShowAdd(false)
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            {addError && (
+              <div className="error-box">
+                {addError}
+              </div>
+            )}
+
+            {addSuccess && (
+              <div className="success-box">
+                {addSuccess}
+              </div>
+            )}
+
+            <form
+              onSubmit={addEmployee}
+              className="form"
+            >
+              <div className="form-section">
+                <h3>
+                  Personal Information
+                </h3>
+
+                <div className="form-grid">
+                  <label>
+                    First Name *
+                    <input
+                      required
+                      value={
+                        addForm.firstName
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            firstName:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Last Name *
+                    <input
+                      required
+                      value={
+                        addForm.lastName
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            lastName:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Email *
+                    <input
+                      required
+                      type="email"
+                      value={
+                        addForm.email
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            email:
+                              event
+                                .target
+                                .value,
+                            loginEmail:
+                              current.loginEmail ||
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Phone
+                    <input
+                      value={
+                        addForm.phone
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            phone:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label className="full">
+                    Address
+                    <textarea
+                      value={
+                        addForm.address
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            address:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>
+                  Employment Information
+                </h3>
+
+                <div className="form-grid">
+                  <label>
+                    Employee Code *
+                    <input
+                      required
+                      value={
+                        addForm.employeeCode
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            employeeCode:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Joining Date
+                    <input
+                      type="date"
+                      value={
+                        addForm.joiningDate
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            joiningDate:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Department
+                    <select
+                      value={
+                        addForm.departmentId
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            departmentId:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        Select Department
+                      </option>
+
+                      {departmentsList.map(
+                        (department) => (
+                          <option
+                            key={
+                              department.id
+                            }
+                            value={
+                              department.id
+                            }
+                          >
+                            {
+                              department.name
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label>
+                    Designation
+                    <select
+                      value={
+                        addForm.designationId
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            designationId:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        Select Designation
+                      </option>
+
+                      {designationsList
+                        .filter(
+                          (item) =>
+                            item.is_active
+                        )
+                        .map(
+                          (
+                            designation
+                          ) => (
+                            <option
+                              key={
+                                designation.id
+                              }
+                              value={
+                                designation.id
+                              }
+                            >
+                              {
+                                designation.name
+                              }
+                            </option>
+                          )
+                        )}
+                    </select>
+                  </label>
+
+                  <label>
+                    Manager
+                    <select
+                      value={
+                        addForm.managerId
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            managerId:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="">
+                        No Manager
+                      </option>
+
+                      {managersList.map(
+                        (manager) => (
+                          <option
+                            key={
+                              manager.id
+                            }
+                            value={
+                              manager.id
+                            }
+                          >
+                            {manager.name}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label>
+                    Employment Type
+                    <select
+                      value={
+                        addForm.employmentType
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            employmentType:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      {employmentTypes.map(
+                        (type) => (
+                          <option
+                            key={type}
+                            value={type}
+                          >
+                            {prettyValue(
+                              type
+                            )}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label>
+                    Work Location
+                    <input
+                      value={
+                        addForm.workLocation
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            workLocation:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Status
+                    <select
+                      value={
+                        addForm.status
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            status:
+                              event
+                                .target
+                                .value,
+                            isActive:
+                              event
+                                .target
+                                .value !==
+                              'INACTIVE' &&
+                              event
+                                .target
+                                .value !==
+                              'TERMINATED',
+                          })
+                        )
+                      }
+                    >
+                      {statuses.map(
+                        (status) => (
+                          <option
+                            key={status}
+                            value={status}
+                          >
+                            {prettyValue(
+                              status
+                            )}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>
+                  Account Information
+                </h3>
+
+                <div className="form-grid">
+                  <label>
+                    Login Email
+                    <input
+                      type="email"
+                      value={
+                        addForm.loginEmail
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            loginEmail:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Temporary Password
+                    <input
+                      type="text"
+                      value={
+                        addForm.temporaryPassword
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            temporaryPassword:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    Role
+                    <select
+                      value={
+                        addForm.role
+                      }
+                      onChange={(event) =>
+                        setAddForm(
+                          (current) => ({
+                            ...current,
+                            role:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                    >
+                      <option value="EMPLOYEE">
+                        Employee
+                      </option>
+                      <option value="MANAGER">
+                        Manager
+                      </option>
+                      <option value="HR_ADMIN">
+                        HR Admin
+                      </option>
+                      <option value="PAYROLL">
+                        Payroll
+                      </option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
+                    setShowAdd(false)
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="primary-button"
+                  disabled={adding}
+                >
+                  {adding
+                    ? 'Creating...'
+                    : 'Create Employee'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* EDIT EMPLOYEE MODAL */}
+      {/* ================================================================ */}
+      {showEdit &&
+        editingEmployee && (
+          <div
+            className="modal-backdrop"
+            onMouseDown={() =>
+              setShowEdit(false)
+            }
+          >
+            <div
+              className="modal large-modal"
+              onMouseDown={(event) =>
+                event.stopPropagation()
+              }
+            >
+              <div className="modal-header">
+                <div>
+                  <h2>
+                    Edit Employee
+                  </h2>
+                  <p>
+                    Update employee
+                    information.
+                  </p>
+                </div>
+
+                <button
+                  className="close-button"
+                  onClick={() =>
+                    setShowEdit(false)
+                  }
+                >
+                  ×
+                </button>
+              </div>
+
+              {editError && (
+                <div className="error-box">
+                  {editError}
+                </div>
+              )}
+
+              {editSuccess && (
+                <div className="success-box">
+                  {editSuccess}
+                </div>
+              )}
+
+              <form
+                onSubmit={
+                  updateEmployee
+                }
+                className="form"
+              >
+                <div className="form-section">
+                  <h3>
+                    Personal Information
+                  </h3>
+
+                  <div className="form-grid">
+                    <label>
+                      First Name *
+                      <input
+                        required
+                        value={
+                          editForm.firstName
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              firstName:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Last Name *
+                      <input
+                        required
+                        value={
+                          editForm.lastName
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              lastName:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Phone
+                      <input
+                        value={
+                          editForm.phone
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              phone:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="full">
+                      Address
+                      <textarea
+                        value={
+                          editForm.address
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              address:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <h3>
+                    Employment Information
+                  </h3>
+
+                  <div className="form-grid">
+                    <label>
+                      Department
+                      <select
+                        value={
+                          editForm.departmentId
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              departmentId:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      >
+                        <option value="">
+                          No Department
+                        </option>
+
+                        {departmentsList.map(
+                          (
+                            department
+                          ) => (
+                            <option
+                              key={
+                                department.id
+                              }
+                              value={
+                                department.id
+                              }
+                            >
+                              {
+                                department.name
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+
+                    <label>
+                      Designation
+                      <select
+                        value={
+                          editForm.designationId
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              designationId:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      >
+                        <option value="">
+                          No Designation
+                        </option>
+
+                        {designationsList
+                          .filter(
+                            (
+                              item
+                            ) =>
+                              item.is_active ||
+                              String(
+                                item.id
+                              ) ===
+                                editForm.designationId
+                          )
+                          .map(
+                            (
+                              designation
+                            ) => (
+                              <option
+                                key={
+                                  designation.id
+                                }
+                                value={
+                                  designation.id
+                                }
+                              >
+                                {
+                                  designation.name
+                                }
+                              </option>
+                            )
+                          )}
+                      </select>
+                    </label>
+
+                    <label>
+                      Manager
+                      <select
+                        value={
+                          editForm.managerId
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              managerId:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      >
+                        <option value="">
+                          No Manager
+                        </option>
+
+                        {managersList
+                          .filter(
+                            (
+                              manager
+                            ) =>
+                              manager.id !==
+                              editingEmployee.id
+                          )
+                          .map(
+                            (
+                              manager
+                            ) => (
+                              <option
+                                key={
+                                  manager.id
+                                }
+                                value={
+                                  manager.id
+                                }
+                              >
+                                {
+                                  manager.name
+                                }
+                              </option>
+                            )
+                          )}
+                      </select>
+                    </label>
+
+                    <label>
+                      Joining Date
+                      <input
+                        type="date"
+                        value={
+                          editForm.joiningDate
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              joiningDate:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Employment Type
+                      <select
+                        value={
+                          editForm.employmentType
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              employmentType:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      >
+                        {employmentTypes.map(
+                          (
+                            type
+                          ) => (
+                            <option
+                              key={type}
+                              value={type}
+                            >
+                              {prettyValue(
+                                type
+                              )}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+
+                    <label>
+                      Work Location
+                      <input
+                        value={
+                          editForm.workLocation
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              workLocation:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      Employee Status
+                      <select
+                        value={
+                          editForm.status
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setEditForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              status:
+                                event
+                                  .target
+                                  .value,
+                            })
+                          )
+                        }
+                      >
+                        {statuses.map(
+                          (
+                            status
+                          ) => (
+                            <option
+                              key={status}
+                              value={status}
+                            >
+                              {prettyValue(
+                                status
+                              )}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setShowEdit(false)
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    className="primary-button"
+                    disabled={updating}
+                  >
+                    {updating
+                      ? 'Saving...'
+                      : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+      {/* ================================================================ */}
+      {/* STATUS MANAGEMENT MODAL */}
+      {/* ================================================================ */}
+      {showStatusManager && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShowStatusManager(
+              false
+            )
+          }
+        >
+          <div
+            className="modal status-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <h2>
+                  Employee Status Management
+                </h2>
+                <p>
+                  Change an employee's
+                  employment status.
+                </p>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setShowStatusManager(
+                    false
+                  )
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            {statusEmployee ? (
+              <>
+                <div className="selected-employee">
+                  <div className="employee-avatar large">
+                    {statusEmployee.first_name
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+
+                  <div>
+                    <strong>
+                      {
+                        statusEmployee.first_name
+                      }{' '}
+                      {
+                        statusEmployee.last_name
+                      }
+                    </strong>
+
+                    <span>
+                      {
+                        statusEmployee.employee_code
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                {statusError && (
+                  <div className="error-box">
+                    {statusError}
+                  </div>
+                )}
+
+                <div className="status-options">
+                  {statuses.map(
+                    (status) => (
+                      <button
+                        key={status}
+                        className={
+                          newStatus ===
+                          status
+                            ? 'status-option selected'
+                            : 'status-option'
+                        }
+                        onClick={() =>
+                          setNewStatus(
+                            status
+                          )
+                        }
+                      >
+                        <span
+                          className={statusClass(
+                            status
+                          )}
+                        >
+                          {prettyValue(
+                            status
+                          )}
+                        </span>
+
+                        {newStatus ===
+                          status && (
+                          <span>
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <div className="status-note">
+                  <strong>
+                    Login access:
+                  </strong>
+
+                  <span>
+                    {newStatus ===
+                      'INACTIVE' ||
+                    newStatus ===
+                      'TERMINATED'
+                      ? 'Login will be disabled.'
+                      : 'Login will remain enabled.'}
+                  </span>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="secondary-button"
+                    onClick={() =>
+                      setShowStatusManager(
+                        false
+                      )
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    className="primary-button"
+                    disabled={
+                      statusSaving ||
+                      newStatus ===
+                        statusEmployee.status
+                    }
+                    onClick={
+                      saveEmployeeStatus
+                    }
+                  >
+                    {statusSaving
+                      ? 'Updating...'
+                      : 'Update Status'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="status-employee-list">
+                  {employees.map(
+                    (employee) => (
+                      <button
+                        key={
+                          employee.id
+                        }
+                        onClick={() =>
+                          setStatusEmployee(
+                            employee
+                          )
+                        }
+                      >
+                        <div className="employee-avatar">
+                          {employee.first_name
+                            .charAt(
+                              0
+                            )
+                            .toUpperCase()}
+                        </div>
+
+                        <div>
+                          <strong>
+                            {
+                              employee.first_name
+                            }{' '}
+                            {
+                              employee.last_name
+                            }
+                          </strong>
+
+                          <span>
+                            {
+                              employee.employee_code
+                            }
+                          </span>
+                        </div>
+
+                        <span
+                          className={statusClass(
+                            employee.status
+                          )}
+                        >
+                          {prettyValue(
+                            employee.status
+                          )}
+                        </span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* DEPARTMENT MANAGEMENT */}
+      {/* ================================================================ */}
+      {showDepartments && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShowDepartments(false)
+          }
+        >
+          <div
+            className="modal xlarge-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <h2>
+                  Department Management
+                </h2>
+                <p>
+                  Create, edit, delete and
+                  assign departments.
+                </p>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setShowDepartments(
+                    false
+                  )
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            {departmentError && (
+              <div className="error-box">
+                {departmentError}
+              </div>
+            )}
+
+            {departmentSuccess && (
+              <div className="success-box">
+                {departmentSuccess}
+              </div>
+            )}
+
+            <div className="management-layout">
+              <div className="management-form">
+                <h3>
+                  {departmentEditingId
+                    ? 'Edit Department'
+                    : 'Create Department'}
+                </h3>
+
+                <form
+                  onSubmit={
+                    saveDepartment
+                  }
+                  className="form"
+                >
+                  <label>
+                    Department Name *
+                    <input
+                      required
+                      value={
+                        departmentForm.name
+                      }
+                      onChange={(event) =>
+                        setDepartmentForm(
+                          (
+                            current
+                          ) => ({
+                            ...current,
+                            name:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                      placeholder="e.g. Finance"
+                    />
+                  </label>
+
+                  <label>
+                    Description
+                    <textarea
+                      value={
+                        departmentForm.description
+                      }
+                      onChange={(event) =>
+                        setDepartmentForm(
+                          (
+                            current
+                          ) => ({
+                            ...current,
+                            description:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                      placeholder="Department description"
+                    />
+                  </label>
+
+                  <div className="form-actions">
+                    {departmentEditingId && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={
+                          cancelDepartmentEdit
+                        }
+                      >
+                        Cancel
+                      </button>
+                    )}
+
+                    <button
+                      className="primary-button"
+                      disabled={
+                        departmentSaving
+                      }
+                    >
+                      {departmentSaving
+                        ? 'Saving...'
+                        : departmentEditingId
+                        ? 'Update Department'
+                        : 'Create Department'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="management-list">
+                <div className="management-list-header">
+                  <h3>
+                    Departments
+                  </h3>
+
+                  <span>
+                    {
+                      departmentsList.length
+                    }{' '}
+                    total
+                  </span>
+                </div>
+
+                <div className="management-table">
+                  {departmentsList.length ===
+                  0 ? (
+                    <div className="empty">
+                      No departments found.
+                    </div>
+                  ) : (
+                    departmentsList.map(
+                      (
+                        department
+                      ) => (
+                        <div
+                          className="management-row"
+                          key={
+                            department.id
+                          }
+                        >
+                          <div className="management-main">
+                            <strong>
+                              {
+                                department.name
+                              }
+                            </strong>
+
+                            <span>
+                              {
+                                department.description ||
+                                'No description'
+                              }
+                            </span>
+                          </div>
+
+                          <div className="count-badge">
+                            {Number(
+                              department.employee_count ||
+                                0
+                            )}{' '}
+                            employees
+                          </div>
+
+                          <div className="management-actions">
+                            <button
+                              onClick={() =>
+                                startEditDepartment(
+                                  department
+                                )
+                              }
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              className="danger-text"
+                              onClick={() =>
+                                deleteDepartment(
+                                  department
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    )
+                  )}
+                </div>
+
+                <div className="assignment-box">
+                  <h3>
+                    Assign Employee
+                  </h3>
+
+                  <div className="assignment-grid">
+                    <select
+                      value={
+                        departmentAssignEmployee
+                      }
+                      onChange={(event) =>
+                        setDepartmentAssignEmployee(
+                          event
+                            .target
+                            .value
+                        )
+                      }
+                    >
+                      <option value="">
+                        Select Department
+                      </option>
+
+                      {departmentsList.map(
+                        (
+                          department
+                        ) => (
+                          <option
+                            key={
+                              department.id
+                            }
+                            value={
+                              department.id
+                            }
+                          >
+                            {
+                              department.name
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+
+                    <select
+                      id="department-employee"
+                      onChange={async (
+                        event
+                      ) => {
+                        const employeeId =
+                          Number(
+                            event
+                              .target
+                              .value
+                          );
+
+                        if (
+                          employeeId
+                        ) {
+                          await assignDepartment(
+                            employeeId
+                          );
+
+                          event.target.value =
+                            '';
+                        }
+                      }}
+                    >
+                      <option value="">
+                        Select Employee
+                      </option>
+
+                      {employees.map(
+                        (employee) => (
+                          <option
+                            key={
+                              employee.id
+                            }
+                            value={
+                              employee.id
+                            }
+                          >
+                            {
+                              employee.first_name
+                            }{' '}
+                            {
+                              employee.last_name
+                            } —{' '}
+                            {
+                              employee.employee_code
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+
+                  <small>
+                    Select a department first,
+                    then select an employee.
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* DESIGNATION MANAGEMENT */}
+      {/* ================================================================ */}
+      {showDesignations && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShowDesignations(false)
+          }
+        >
+          <div
+            className="modal xlarge-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <h2>
+                  Designation Management
+                </h2>
+                <p>
+                  Create, edit, activate,
+                  deactivate and delete
+                  designations.
+                </p>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setShowDesignations(
+                    false
+                  )
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            {designationError && (
+              <div className="error-box">
+                {designationError}
+              </div>
+            )}
+
+            {designationSuccess && (
+              <div className="success-box">
+                {designationSuccess}
+              </div>
+            )}
+
+            <div className="management-layout">
+              <div className="management-form">
+                <h3>
+                  {designationEditingId
+                    ? 'Edit Designation'
+                    : 'Create Designation'}
+                </h3>
+
+                <form
+                  onSubmit={
+                    saveDesignation
+                  }
+                  className="form"
+                >
+                  <label>
+                    Designation Name *
+                    <input
+                      required
+                      value={
+                        designationForm.name
+                      }
+                      onChange={(event) =>
+                        setDesignationForm(
+                          (
+                            current
+                          ) => ({
+                            ...current,
+                            name:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                      placeholder="e.g. Data Analyst"
+                    />
+                  </label>
+
+                  <label>
+                    Description
+                    <textarea
+                      value={
+                        designationForm.description
+                      }
+                      onChange={(event) =>
+                        setDesignationForm(
+                          (
+                            current
+                          ) => ({
+                            ...current,
+                            description:
+                              event
+                                .target
+                                .value,
+                          })
+                        )
+                      }
+                      placeholder="Designation description"
+                    />
+                  </label>
+
+                  {designationEditingId && (
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={
+                          designationForm.isActive
+                        }
+                        onChange={(event) =>
+                          setDesignationForm(
+                            (
+                              current
+                            ) => ({
+                              ...current,
+                              isActive:
+                                event
+                                  .target
+                                  .checked,
+                            })
+                          )
+                        }
+                      />
+
+                      Active designation
+                    </label>
+                  )}
+
+                  <div className="form-actions">
+                    {designationEditingId && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={
+                          cancelDesignationEdit
+                        }
+                      >
+                        Cancel
+                      </button>
+                    )}
+
+                    <button
+                      className="primary-button"
+                      disabled={
+                        designationSaving
+                      }
+                    >
+                      {designationSaving
+                        ? 'Saving...'
+                        : designationEditingId
+                        ? 'Update Designation'
+                        : 'Create Designation'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="management-list">
+                <div className="management-list-header">
+                  <h3>
+                    Designations
+                  </h3>
+
+                  <span>
+                    {
+                      designationsList.length
+                    }{' '}
+                    total
+                  </span>
+                </div>
+
+                <div className="management-table">
+                  {designationsList.length ===
+                  0 ? (
+                    <div className="empty">
+                      No designations found.
+                    </div>
+                  ) : (
+                    designationsList.map(
+                      (
+                        designation
+                      ) => (
+                        <div
+                          className="management-row"
+                          key={
+                            designation.id
+                          }
+                        >
+                          <div className="management-main">
+                            <strong>
+                              {
+                                designation.name
+                              }
+                            </strong>
+
+                            <span>
+                              {
+                                designation.description ||
+                                'No description'
+                              }
+                            </span>
+                          </div>
+
+                          <div>
+                            <span
+                              className={
+                                designation.is_active
+                                  ? 'active-badge'
+                                  : 'inactive-badge'
+                              }
+                            >
+                              {designation.is_active
+                                ? 'Active'
+                                : 'Inactive'}
+                            </span>
+                          </div>
+
+                          <div className="count-badge">
+                            {Number(
+                              designation.employee_count ||
+                                0
+                            )}{' '}
+                            employees
+                          </div>
+
+                          <div className="management-actions">
+                            <button
+                              onClick={() =>
+                                startEditDesignation(
+                                  designation
+                                )
+                              }
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                toggleDesignation(
+                                  designation
+                                )
+                              }
+                            >
+                              {designation.is_active
+                                ? 'Deactivate'
+                                : 'Activate'}
+                            </button>
+
+                            <button
+                              className="danger-text"
+                              onClick={() =>
+                                deleteDesignation(
+                                  designation
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    )
+                  )}
+                </div>
+
+                <div className="info-box">
+                  <strong>
+                    Assignment
+                  </strong>
+
+                  <span>
+                    Designations are assigned
+                    directly from the employee
+                    Edit screen. The employee
+                    count above shows current
+                    assignments.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* PROFILE MODAL */}
+      {/* ================================================================ */}
+      {showProfile && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() =>
+            setShowProfile(false)
+          }
+        >
+          <div
+            className="modal xlarge-modal"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="modal-header">
+              <div>
+                <h2>
+                  Employee Profile
+                </h2>
+                <p>
+                  Complete employee
+                  information and summary.
+                </p>
+              </div>
+
+              <button
+                className="close-button"
+                onClick={() =>
+                  setShowProfile(false)
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            {profileLoading ? (
+              <div className="loading">
+                Loading profile...
+              </div>
+            ) : profileError ? (
+              <div className="error-box">
+                {profileError}
+              </div>
+            ) : (
+              <div className="profile">
+                {selectedEmployee && (
+                  <>
+                    <div className="profile-hero">
+                      <div className="profile-avatar">
+                        {selectedEmployee.first_name
+                          .charAt(
+                            0
+                          )
+                          .toUpperCase()}
+                      </div>
+
+                      <div className="profile-title">
+                        <h2>
+                          {
+                            selectedEmployee.first_name
+                          }{' '}
+                          {
+                            selectedEmployee.last_name
+                          }
+                        </h2>
+
+                        <p>
+                          {
+                            selectedEmployee.designation ||
+                            'Employee'
+                          }
+                        </p>
+
+                        <span
+                          className={statusClass(
+                            selectedEmployee.status
+                          )}
+                        >
+                          {prettyValue(
+                            selectedEmployee.status
+                          )}
+                        </span>
+                      </div>
+
+                      <button
+                        className="primary-button"
+                        onClick={() => {
+                          setShowProfile(
+                            false
+                          );
+                          openEditEmployee(
+                            selectedEmployee
+                          );
+                        }}
+                      >
+                        Edit Employee
+                      </button>
+                    </div>
+
+                    <div className="profile-grid">
+                      <div className="profile-section">
+                        <h3>
+                          Personal Information
+                        </h3>
+
+                        <div className="detail-grid">
+                          <div>
+                            <span>
+                              First Name
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.first_name
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Last Name
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.last_name
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Email
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.email
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Phone
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.phone ||
+                                '—'
+                              }
+                            </strong>
+                          </div>
+
+                          <div className="full">
+                            <span>
+                              Address
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.address ||
+                                '—'
+                              }
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <h3>
+                          Employment Information
+                        </h3>
+
+                        <div className="detail-grid">
+                          <div>
+                            <span>
+                              Employee Code
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.employee_code
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Department
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.department ||
+                                '—'
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Designation
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.designation ||
+                                '—'
+                              }
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Employment Type
+                            </span>
+                            <strong>
+                              {prettyValue(
+                                selectedEmployee.employment_type
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Joining Date
+                            </span>
+                            <strong>
+                              {formatDate(
+                                selectedEmployee.joining_date
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Work Location
+                            </span>
+                            <strong>
+                              {
+                                selectedEmployee.work_location ||
+                                '—'
+                              }
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <h3>
+                          Manager / Reporting
+                        </h3>
+
+                        <div className="manager-card">
+                          <div className="employee-avatar">
+                            {(
+                              profile?.manager?.name ||
+                              selectedEmployee.manager_name ||
+                              'N'
+                            )
+                              .charAt(0)
+                              .toUpperCase()}
+                          </div>
+
+                          <div>
+                            <strong>
+                              {profile?.manager
+                                ?.name ||
+                                selectedEmployee.manager_name ||
+                                'No Manager'}
+                            </strong>
+
+                            <span>
+                              {profile?.manager
+                                ?.designation ||
+                                'Reporting Manager'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <h3>
+                          Account
+                        </h3>
+
+                        <div className="detail-grid">
+                          <div>
+                            <span>
+                              Role
+                            </span>
+                            <strong>
+                              {prettyValue(
+                                selectedEmployee.role
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Login Status
+                            </span>
+                            <strong>
+                              {selectedEmployee.is_active
+                                ? 'Enabled'
+                                : 'Disabled'}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="summary-grid">
+                      <div className="summary-card">
+                        <span>
+                          Attendance
+                        </span>
+                        <strong>
+                          {profile
+                            ?.attendance
+                            ?.attendancePercentage ??
+                            0}
+                          %
+                        </strong>
+                        <small>
+                          {
+                            profile
+                              ?.attendance
+                              ?.present
+                          }{' '}
+                          present
+                        </small>
+                      </div>
+
+                      <div className="summary-card">
+                        <span>
+                          Leave
+                        </span>
+                        <strong>
+                          {
+                            profile
+                              ?.leave
+                              ?.approvedDays
+                          }
+                        </strong>
+                        <small>
+                          approved days
+                        </small>
+                      </div>
+
+                      <div className="summary-card">
+                        <span>
+                          Net Salary
+                        </span>
+                        <strong>
+                          {formatCurrency(
+                            profile
+                              ?.payroll
+                              ?.netSalary
+                          )}
+                        </strong>
+                        <small>
+                          latest payroll
+                        </small>
+                      </div>
+
+                      <div className="summary-card">
+                        <span>
+                          Performance
+                        </span>
+                        <strong>
+                          {profile
+                            ?.performance
+                            ?.averageRating ??
+                            '—'}
+                        </strong>
+                        <small>
+                          average rating
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="profile-section">
+                      <h3>
+                        Documents
+                      </h3>
+
+                      <div className="info-box">
+                        <span>
+                          Document management is
+                          not required for the
+                          current Employee
+                          Management scope.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="profile-section">
+                      <h3>
+                        Activity History
+                      </h3>
+
+                      {profile?.activity &&
+                      profile.activity
+                        .length > 0 ? (
+                        <div className="activity-list">
+                          {profile.activity.map(
+                            (
+                              item,
+                              index
+                            ) => (
+                              <div
+                                key={
+                                  item.id ||
+                                  index
+                                }
+                                className="activity-item"
+                              >
+                                <div className="activity-dot" />
+
+                                <div>
+                                  <strong>
+                                    {item.action ||
+                                      'Activity'}
+                                  </strong>
+
+                                  <span>
+                                    {item.details ||
+                                      item.entity_type ||
+                                      ''}
+                                  </span>
+
+                                  <small>
+                                    {formatDate(
+                                      item.created_at
+                                    )}
+                                  </small>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      ) : (
+                        <div className="empty">
+                          No activity history
+                          available.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .page {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+        }
+
+        .page-header h2 {
+          margin: 0 0 6px;
+          font-size: 26px;
+          color: #172033;
+        }
+
+        .page-header p {
+          margin: 0;
+          color: #718096;
+        }
+
+        .header-actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 9px;
+        }
+
+        .header-actions button,
+        .refresh-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+        }
+
+        button {
+          font-family: inherit;
+          cursor: pointer;
+        }
+
+        button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .primary-button,
+        .secondary-button,
+        .clear-button,
+        .refresh-button {
+          border: 0;
+          border-radius: 9px;
+          padding: 10px 14px;
+          font-weight: 700;
+          font-size: 13px;
+        }
+
+        .primary-button {
+          background: #2563eb;
+          color: white;
+        }
+
+        .secondary-button {
+          background: #eef2ff;
+          color: #334155;
+        }
+
+        .clear-button {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        .refresh-button {
+          background: #f8fafc;
+          color: #2563eb;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            4,
+            minmax(0, 1fr)
+          );
+          gap: 16px;
+        }
+
+        .stat-card {
+          background: white;
+          border: 1px solid #e7ebf0;
+          border-radius: 14px;
+          padding: 18px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .stat-icon {
+          width: 44px;
+          height: 44px;
+          flex: 0 0 44px;
+          border-radius: 12px;
+          background: #eff6ff;
+          display: grid;
+          place-items: center;
+          color: #2563eb;
+        }
+
+        .active-icon {
+          background: #ecfdf5;
+        }
+
+        .leave-icon {
+          background: #fff7ed;
+        }
+
+        .dept-icon {
+          background: #f5f3ff;
+        }
+
+        .stat-card div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .stat-card span {
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .stat-card strong {
+          font-size: 22px;
+          color: #172033;
+        }
+
+        .card {
+          background: white;
+          border: 1px solid #e7ebf0;
+          border-radius: 14px;
+          overflow: hidden;
+        }
+
+        .filters-card {
+          padding: 18px;
+        }
+
+        .filters-grid {
+          display: grid;
+          grid-template-columns:
+            2fr repeat(4, 1fr);
+          gap: 14px;
+        }
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .field label,
+        .form label {
+          font-size: 12px;
+          font-weight: 700;
+          color: #475569;
+        }
+
+        input,
+        select,
+        textarea {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #dbe2ea;
+          border-radius: 8px;
+          padding: 10px 11px;
+          font: inherit;
+          color: #172033;
+          background: white;
+          outline: none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px
+            rgba(37, 99, 235, 0.08);
+        }
+
+        textarea {
+          min-height: 82px;
+          resize: vertical;
+        }
+
+        .filter-actions {
+          display: flex;
+          align-items: flex-end;
+          gap: 8px;
+        }
+
+        .directory-card {
+          padding: 0;
+        }
+
+        .section-header {
+          padding: 18px 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid #edf0f4;
+        }
+
+        .section-header h3,
+        .management-list-header h3 {
+          margin: 0;
+          color: #172033;
+        }
+
+        .section-header span {
+          display: block;
+          margin-top: 4px;
+          color: #94a3b8;
+          font-size: 12px;
+        }
+
+        .table-wrapper {
+          overflow-x: auto;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 1050px;
+        }
+
+        th {
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          text-align: left;
+          padding: 13px 15px;
+          white-space: nowrap;
+        }
+
+        td {
+          padding: 14px 15px;
+          border-top: 1px solid #eef2f6;
+          color: #475569;
+          font-size: 13px;
+          vertical-align: middle;
+        }
+
+        tbody tr {
+          transition: background 0.18s ease;
+        }
+
+        tbody tr:hover {
+          background: #f8fbff;
+        }
+
+        .employee-link {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: none;
+          border: 0;
+          padding: 0;
+          text-align: left;
+        }
+
+        .employee-link > div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .employee-link strong {
+          color: #172033;
+        }
+
+        .employee-link span {
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .employee-avatar {
+          width: 36px;
+          height: 36px;
+          flex: 0 0 36px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: #e0e7ff;
+          color: #3730a3;
+          font-weight: 800;
+        }
+
+        .employee-avatar.large {
+          width: 46px;
+          height: 46px;
+          flex-basis: 46px;
+        }
+
+        .row-actions {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          white-space: nowrap;
+        }
+
+        .row-action-button {
+          width: 36px;
+          height: 36px;
+          min-width: 36px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #dbe3ee;
+          background: #ffffff;
+          border-radius: 9px;
+          color: #475569;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition: all 0.18s ease;
+        }
+
+        .row-action-button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.10);
+        }
+
+        .row-action-button:focus-visible {
+          outline: 3px solid rgba(37, 99, 235, 0.16);
+          outline-offset: 1px;
+        }
+
+        .view-action {
+          color: #2563eb;
+        }
+
+        .view-action:hover {
+          background: #eff6ff;
+          border-color: #93c5fd;
+        }
+
+        .edit-action {
+          color: #7c3aed;
+        }
+
+        .edit-action:hover {
+          background: #f5f3ff;
+          border-color: #c4b5fd;
+        }
+
+        .status-action {
+          color: #d97706;
+        }
+
+        .status-action:hover {
+          background: #fffbeb;
+          border-color: #fcd34d;
+        }
+
+        .status-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 5px 9px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .status-active {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .status-inactive {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        .status-on_leave {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .status-suspended {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+
+        .status-terminated {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .pagination {
+          padding: 14px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-top: 1px solid #edf0f4;
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .pagination-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .pagination-controls button {
+          width: 32px;
+          height: 32px;
+          border: 1px solid #dbe2ea;
+          background: white;
+          border-radius: 7px;
+        }
+
+        .pagination-controls select {
+          width: auto;
+          padding: 7px 9px;
+        }
+
+        .loading,
+        .empty {
+          padding: 45px;
+          text-align: center;
+          color: #94a3b8;
+        }
+
+        .error-box,
+        .success-box,
+        .info-box {
+          margin: 14px 18px;
+          padding: 11px 13px;
+          border-radius: 8px;
+          font-size: 13px;
+        }
+
+        .error-box {
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+        }
+
+        .success-box {
+          background: #ecfdf5;
+          color: #047857;
+          border: 1px solid #a7f3d0;
+        }
+
+        .info-box {
+          background: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #bfdbfe;
+        }
+
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          background: rgba(
+            15,
+            23,
+            42,
+            0.52
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .modal {
+          width: min(620px, 100%);
+          max-height: 92vh;
+          overflow-y: auto;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 25px 60px
+            rgba(15, 23, 42, 0.25);
+        }
+
+        .large-modal {
+          width: min(850px, 100%);
+        }
+
+        .xlarge-modal {
+          width: min(1100px, 100%);
+        }
+
+        .status-modal {
+          width: min(620px, 100%);
+        }
+
+        .modal-header {
+          padding: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-bottom: 1px solid #edf0f4;
+        }
+
+        .modal-header h2 {
+          margin: 0;
+          color: #172033;
+        }
+
+        .modal-header p {
+          margin: 5px 0 0;
+          color: #94a3b8;
+          font-size: 13px;
+        }
+
+        .close-button {
+          width: 34px;
+          height: 34px;
+          border: 0;
+          border-radius: 8px;
+          background: #f1f5f9;
+          font-size: 22px;
+          color: #475569;
+        }
+
+        .form {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .form-section {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .form-section h3,
+        .management-form h3 {
+          margin: 0;
+          color: #172033;
+          font-size: 15px;
+        }
+
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+          );
+          gap: 14px;
+        }
+
+        .form label {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .form label.full {
+          grid-column: 1 / -1;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .modal-footer {
+          padding: 16px 20px;
+          border-top: 1px solid #edf0f4;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .management-layout {
+          display: grid;
+          grid-template-columns: 320px 1fr;
+          min-height: 500px;
+        }
+
+        .management-form {
+          padding: 20px;
+          border-right: 1px solid #edf0f4;
+          background: #f8fafc;
+        }
+
+        .management-list {
+          padding: 20px;
+        }
+
+        .management-list-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+
+        .management-list-header span {
+          color: #94a3b8;
+          font-size: 12px;
+        }
+
+        .management-table {
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .management-row {
+          display: grid;
+          grid-template-columns:
+            minmax(180px, 1fr)
+            auto
+            auto
+            auto;
+          align-items: center;
+          gap: 15px;
+          padding: 13px 14px;
+          border-bottom: 1px solid #edf0f4;
+        }
+
+        .management-row:last-child {
+          border-bottom: 0;
+        }
+
+        .management-main {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .management-main strong {
+          color: #172033;
+        }
+
+        .management-main span {
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .count-badge {
+          padding: 6px 9px;
+          border-radius: 7px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-size: 11px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .active-badge,
+        .inactive-badge {
+          display: inline-block;
+          padding: 5px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .active-badge {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .inactive-badge {
+          background: #f1f5f9;
+          color: #64748b;
+        }
+
+        .management-actions {
+          display: flex;
+          gap: 5px;
+        }
+
+        .management-actions button {
+          border: 1px solid #dbe2ea;
+          background: white;
+          border-radius: 7px;
+          padding: 6px 8px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .danger-text {
+          color: #dc2626;
+        }
+
+        .assignment-box {
+          margin-top: 18px;
+          padding: 16px;
+          border: 1px solid #dbe2ea;
+          border-radius: 10px;
+          background: #f8fafc;
+        }
+
+        .assignment-box h3 {
+          margin: 0 0 12px;
+          font-size: 14px;
+        }
+
+        .assignment-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .assignment-box small {
+          display: block;
+          margin-top: 8px;
+          color: #94a3b8;
+        }
+
+        .checkbox-label {
+          flex-direction: row !important;
+          align-items: center;
+        }
+
+        .checkbox-label input {
+          width: auto;
+        }
+
+        .selected-employee {
+          margin: 18px;
+          padding: 15px;
+          border-radius: 12px;
+          background: #f8fafc;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .selected-employee > div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .selected-employee span {
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .status-options {
+          padding: 0 18px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .status-option {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 9px;
+        }
+
+        .status-option.selected {
+          border-color: #2563eb;
+          background: #eff6ff;
+        }
+
+        .status-note {
+          margin: 18px;
+          padding: 12px;
+          border-radius: 8px;
+          background: #f8fafc;
+          display: flex;
+          gap: 6px;
+          font-size: 12px;
+          color: #64748b;
+        }
+
+        .status-employee-list {
+          padding: 15px 18px;
+          display: grid;
+          gap: 7px;
+        }
+
+        .status-employee-list button {
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 9px;
+          padding: 10px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-align: left;
+        }
+
+        .status-employee-list button > div:nth-child(2) {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .status-employee-list span {
+          color: #94a3b8;
+          font-size: 10px;
+        }
+
+        .status-employee-list .status-pill {
+          color: inherit;
+          font-size: 10px;
+        }
+
+        .profile {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .profile-hero {
+          padding: 18px;
+          border-radius: 12px;
+          background: #f8fafc;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .profile-avatar {
+          width: 62px;
+          height: 62px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: #dbeafe;
+          color: #1d4ed8;
+          font-size: 23px;
+          font-weight: 800;
+        }
+
+        .profile-title {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+
+        .profile-title h2 {
+          margin: 0;
+          color: #172033;
+        }
+
+        .profile-title p {
+          margin: 0 0 5px;
+          color: #64748b;
+        }
+
+        .profile-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
+
+        .profile-section {
+          border: 1px solid #e5eaf0;
+          border-radius: 11px;
+          padding: 16px;
+        }
+
+        .profile-section h3 {
+          margin: 0 0 14px;
+          color: #172033;
+          font-size: 14px;
+        }
+
+        .detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .detail-grid > div {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .detail-grid .full {
+          grid-column: 1 / -1;
+        }
+
+        .detail-grid span {
+          color: #94a3b8;
+          font-size: 10px;
+          text-transform: uppercase;
+        }
+
+        .detail-grid strong {
+          color: #334155;
+          font-size: 12px;
+          word-break: break-word;
+        }
+
+        .manager-card {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .manager-card div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .manager-card span {
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            4,
+            1fr
+          );
+          gap: 12px;
+        }
+
+        .summary-card {
+          padding: 15px;
+          border-radius: 11px;
+          background: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .summary-card span {
+          color: #64748b;
+          font-size: 11px;
+        }
+
+        .summary-card strong {
+          color: #172033;
+          font-size: 20px;
+        }
+
+        .summary-card small {
+          color: #94a3b8;
+        }
+
+        .activity-list {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .activity-item {
+          display: flex;
+          gap: 10px;
+          padding: 12px 0;
+          border-bottom: 1px solid #edf0f4;
+        }
+
+        .activity-item:last-child {
+          border-bottom: 0;
+        }
+
+        .activity-dot {
+          width: 8px;
+          height: 8px;
+          margin-top: 5px;
+          border-radius: 50%;
+          background: #2563eb;
+          flex: 0 0 8px;
+        }
+
+        .activity-item > div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .activity-item strong {
+          color: #334155;
+          font-size: 12px;
+        }
+
+        .activity-item span,
+        .activity-item small {
+          color: #94a3b8;
+          font-size: 11px;
+        }
 
 
-);
-}
+        /* DARK MODE OVERRIDES FOR EMPLOYEE MANAGEMENT */
+        :global(.hrms-dark-mode) .page { color: #e5e7eb; }
+        :global(.hrms-dark-mode) .page-header h2 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .page-header p { color: #94a3b8; }
+        :global(.hrms-dark-mode) .secondary-button { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+        :global(.hrms-dark-mode) .clear-button { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+        :global(.hrms-dark-mode) .refresh-button { background: #172033; color: #60a5fa; border: 1px solid #334155; }
+        :global(.hrms-dark-mode) .stat-card,
+        :global(.hrms-dark-mode) .card,
+        :global(.hrms-dark-mode) .modal { background: #111827; border-color: #273449; }
+        :global(.hrms-dark-mode) .stat-card span { color: #94a3b8; }
+        :global(.hrms-dark-mode) .stat-card strong { color: #f8fafc; }
+        :global(.hrms-dark-mode) .stat-icon { background: #172554; color: #60a5fa; }
+        :global(.hrms-dark-mode) .active-icon { background: #052e1a; color: #4ade80; }
+        :global(.hrms-dark-mode) .leave-icon { background: #3b2507; color: #fbbf24; }
+        :global(.hrms-dark-mode) .dept-icon { background: #24164f; color: #a78bfa; }
+        :global(.hrms-dark-mode) .field label,
+        :global(.hrms-dark-mode) .form label { color: #cbd5e1; }
+        :global(.hrms-dark-mode) input,
+        :global(.hrms-dark-mode) select,
+        :global(.hrms-dark-mode) textarea { background: #0f172a; color: #f1f5f9; border-color: #334155; }
+        :global(.hrms-dark-mode) input::placeholder,
+        :global(.hrms-dark-mode) textarea::placeholder { color: #64748b; }
+        :global(.hrms-dark-mode) select option { background: #0f172a; color: #f1f5f9; }
+        :global(.hrms-dark-mode) .section-header { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) .section-header h3,
+        :global(.hrms-dark-mode) .management-list-header h3 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .section-header span,
+        :global(.hrms-dark-mode) .management-list-header span { color: #94a3b8; }
+        :global(.hrms-dark-mode) th { background: #0f172a; color: #94a3b8; }
+        :global(.hrms-dark-mode) td { color: #cbd5e1; border-top-color: #273449; }
+        :global(.hrms-dark-mode) tbody tr:hover { background: #172033; }
+        :global(.hrms-dark-mode) .employee-link strong { color: #f8fafc; }
+        :global(.hrms-dark-mode) .employee-link span { color: #94a3b8; }
+        :global(.hrms-dark-mode) .employee-avatar { background: #1e3a8a; color: #bfdbfe; }
+        :global(.hrms-dark-mode) .row-action-button { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+        :global(.hrms-dark-mode) .view-action:hover { background: #172554; border-color: #3b82f6; }
+        :global(.hrms-dark-mode) .edit-action:hover { background: #2e1065; border-color: #8b5cf6; }
+        :global(.hrms-dark-mode) .status-action:hover { background: #451a03; border-color: #d97706; }
+        :global(.hrms-dark-mode) .pagination { border-top-color: #273449; color: #94a3b8; }
+        :global(.hrms-dark-mode) .pagination-controls button { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+        :global(.hrms-dark-mode) .modal-header { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) .modal-header h2,
+        :global(.hrms-dark-mode) .form-section h3,
+        :global(.hrms-dark-mode) .management-form h3 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .modal-header p { color: #94a3b8; }
+        :global(.hrms-dark-mode) .close-button { background: #1e293b; color: #cbd5e1; }
+        :global(.hrms-dark-mode) .modal-footer { border-top-color: #273449; }
+        :global(.hrms-dark-mode) .management-form { background: #0f172a; border-right-color: #273449; }
+        :global(.hrms-dark-mode) .management-list { background: #111827; }
+        :global(.hrms-dark-mode) .management-table { border-color: #334155; }
+        :global(.hrms-dark-mode) .management-row { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) .management-main strong { color: #f8fafc; }
+        :global(.hrms-dark-mode) .management-main span { color: #94a3b8; }
+        :global(.hrms-dark-mode) .count-badge { background: #172554; color: #93c5fd; }
+        :global(.hrms-dark-mode) .management-actions button { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+        :global(.hrms-dark-mode) .assignment-box,
+        :global(.hrms-dark-mode) .selected-employee,
+        :global(.hrms-dark-mode) .status-note,
+        :global(.hrms-dark-mode) .summary-card,
+        :global(.hrms-dark-mode) .profile-hero { background: #0f172a; }
+        :global(.hrms-dark-mode) .assignment-box { border-color: #334155; }
+        :global(.hrms-dark-mode) .assignment-box h3 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .selected-employee span,
+        :global(.hrms-dark-mode) .assignment-box small,
+        :global(.hrms-dark-mode) .status-note,
+        :global(.hrms-dark-mode) .summary-card span,
+        :global(.hrms-dark-mode) .summary-card small,
+        :global(.hrms-dark-mode) .profile-title p { color: #94a3b8; }
+        :global(.hrms-dark-mode) .status-option,
+        :global(.hrms-dark-mode) .status-employee-list button { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+        :global(.hrms-dark-mode) .status-option.selected { background: #172554; border-color: #3b82f6; }
+        :global(.hrms-dark-mode) .profile-title h2,
+        :global(.hrms-dark-mode) .profile-section h3,
+        :global(.hrms-dark-mode) .summary-card strong { color: #f8fafc; }
+        :global(.hrms-dark-mode) .profile-section { border-color: #334155; }
+        :global(.hrms-dark-mode) .detail-grid strong { color: #e2e8f0; }
+        :global(.hrms-dark-mode) .detail-grid span,
+        :global(.hrms-dark-mode) .manager-card span { color: #94a3b8; }
+        :global(.hrms-dark-mode) .activity-item { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) .activity-item strong { color: #e2e8f0; }
+        :global(.hrms-dark-mode) .activity-item span,
+        :global(.hrms-dark-mode) .activity-item small { color: #94a3b8; }
+        :global(.hrms-dark-mode) .error-box { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+        :global(.hrms-dark-mode) .success-box { background: #052e1a; color: #86efac; border-color: #166534; }
+        :global(.hrms-dark-mode) .info-box { background: #172554; color: #bfdbfe; border-color: #1d4ed8; }
+
+        @media (max-width: 1200px) {
+          .filters-grid {
+            grid-template-columns: repeat(
+              3,
+              1fr
+            );
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(
+              2,
+              1fr
+            );
+          }
+        }
+
+        @media (max-width: 900px) {
+          .page-header {
+            flex-direction: column;
+          }
+
+          .header-actions {
+            width: 100%;
+          }
+
+          .management-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .management-form {
+            border-right: 0;
+            border-bottom: 1px solid
+              #edf0f4;
+          }
+
+          .profile-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 700px) {
+          .filters-grid,
+          .form-grid,
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .form label.full,
+          .detail-grid .full {
+            grid-column: auto;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .pagination {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .management-row {
+            grid-template-columns: 1fr;
+          }
+
+          .assignment-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .profile-hero {
+            flex-wrap: wrap;
+          }
+        }
+      `}</style>
+    </HRMSLayout>
+  );
+  }
