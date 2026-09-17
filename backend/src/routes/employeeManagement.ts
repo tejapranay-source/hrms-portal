@@ -1,12 +1,21 @@
+
 import { Router, Request, Response, NextFunction } from 'express';
+
 import type { Knex } from 'knex';
+
 import { db } from '../db';
+
 import { auth, role } from '../middleware/auth';
 
 const router = Router();
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'HR_ADMIN'] as const;
-const MANAGEMENT_ROLES = ['SUPER_ADMIN', 'HR_ADMIN', 'MANAGER'] as const;
+
+const MANAGEMENT_ROLES = [
+  'SUPER_ADMIN',
+  'HR_ADMIN',
+  'MANAGER',
+] as const;
 
 const EMPLOYEE_STATUSES = [
   'ACTIVE',
@@ -24,7 +33,33 @@ const EMPLOYMENT_TYPES = [
   'TEMPORARY',
 ] as const;
 
-type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
+const DOCUMENT_TYPES = [
+  'RESUME',
+  'ID_PROOF',
+  'ADDRESS_PROOF',
+  'OFFER_LETTER',
+  'JOINING_DOCUMENTS',
+  'EMPLOYMENT_AGREEMENT',
+  'CERTIFICATE',
+  'OTHER_HR_DOCUMENT',
+] as const;
+
+const DOCUMENT_STATUSES = [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'EXPIRED',
+  'ACTIVE',
+] as const;
+
+type EmployeeStatus =
+  (typeof EMPLOYEE_STATUSES)[number];
+
+type DocumentType =
+  (typeof DOCUMENT_TYPES)[number];
+
+type DocumentStatus =
+  (typeof DOCUMENT_STATUSES)[number];
 
 function asyncHandler(
   handler: (
@@ -33,19 +68,51 @@ function asyncHandler(
     next: NextFunction
   ) => Promise<void>
 ) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     handler(req, res, next).catch(next);
   };
 }
 
-function isValidStatus(value: unknown): value is EmployeeStatus {
+function isValidStatus(
+  value: unknown
+): value is EmployeeStatus {
   return (
     typeof value === 'string' &&
-    EMPLOYEE_STATUSES.includes(value as EmployeeStatus)
+    EMPLOYEE_STATUSES.includes(
+      value as EmployeeStatus
+    )
   );
 }
 
-function isValidPhone(value: string | null | undefined): boolean {
+function isValidDocumentType(
+  value: unknown
+): value is DocumentType {
+  return (
+    typeof value === 'string' &&
+    DOCUMENT_TYPES.includes(
+      value as DocumentType
+    )
+  );
+}
+
+function isValidDocumentStatus(
+  value: unknown
+): value is DocumentStatus {
+  return (
+    typeof value === 'string' &&
+    DOCUMENT_STATUSES.includes(
+      value as DocumentStatus
+    )
+  );
+}
+
+function isValidPhone(
+  value: string | null | undefined
+): boolean {
   if (!value) {
     return true;
   }
@@ -53,7 +120,9 @@ function isValidPhone(value: string | null | undefined): boolean {
   return /^\+?[0-9\s()-]{7,20}$/.test(value);
 }
 
-function toNullableNumber(value: unknown): number | null {
+function toNullableNumber(
+  value: unknown
+): number | null {
   if (
     value === undefined ||
     value === null ||
@@ -86,7 +155,9 @@ router.get(
       )
       .orderBy('name', 'asc');
 
-    const designations = await db('designations')
+    const designations = await db(
+      'designations'
+    )
       .select(
         'id',
         'name',
@@ -119,15 +190,20 @@ router.get(
         this.where(
           'users.role',
           'MANAGER'
-        ).orWhereILike(
-          'employees.designation',
-          '%manager%'
-        ).orWhereILike(
-          'employees.designation',
-          '%team lead%'
-        );
+        )
+          .orWhereILike(
+            'employees.designation',
+            '%manager%'
+          )
+          .orWhereILike(
+            'employees.designation',
+            '%team lead%'
+          );
       })
-      .orderBy('users.first_name', 'asc');
+      .orderBy(
+        'users.first_name',
+        'asc'
+      );
 
     res.json({
       departments,
@@ -135,6 +211,8 @@ router.get(
       managers,
       statuses: EMPLOYEE_STATUSES,
       employmentTypes: EMPLOYMENT_TYPES,
+      documentTypes: DOCUMENT_TYPES,
+      documentStatuses: DOCUMENT_STATUSES,
     });
   })
 );
@@ -148,7 +226,9 @@ router.put(
   auth,
   role(...ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const employeeId = Number(req.params.id);
+    const employeeId = Number(
+      req.params.id
+    );
 
     if (!Number.isInteger(employeeId)) {
       res.status(400).json({
@@ -183,7 +263,10 @@ router.put(
       metadata,
     } = req.body;
 
-    if (phone && !isValidPhone(phone)) {
+    if (
+      phone &&
+      !isValidPhone(phone)
+    ) {
       res.status(400).json({
         message: 'Invalid phone number',
       });
@@ -195,7 +278,9 @@ router.put(
       !isValidStatus(status)
     ) {
       res.status(400).json({
-        message: `Invalid employee status. Allowed values: ${EMPLOYEE_STATUSES.join(', ')}`,
+        message: `Invalid employee status. Allowed values: ${EMPLOYEE_STATUSES.join(
+          ', '
+        )}`,
       });
       return;
     }
@@ -209,7 +294,9 @@ router.put(
       )
     ) {
       res.status(400).json({
-        message: `Invalid employment type. Allowed values: ${EMPLOYMENT_TYPES.join(', ')}`,
+        message: `Invalid employment type. Allowed values: ${EMPLOYMENT_TYPES.join(
+          ', '
+        )}`,
       });
       return;
     }
@@ -224,7 +311,9 @@ router.put(
       toNullableNumber(managerId);
 
     if (newDepartmentId !== null) {
-      const department = await db('departments')
+      const department = await db(
+        'departments'
+      )
         .where('id', newDepartmentId)
         .first();
 
@@ -236,15 +325,23 @@ router.put(
       }
     }
 
-    let designationName: string | null =
+    let designationName:
+      | string
+      | null =
       existing.designation ?? null;
 
     if (newDesignationId !== null) {
       const designation = await db(
         'designations'
       )
-        .where('id', newDesignationId)
-        .where('is_active', true)
+        .where(
+          'id',
+          newDesignationId
+        )
+        .where(
+          'is_active',
+          true
+        )
         .first();
 
       if (!designation) {
@@ -255,11 +352,14 @@ router.put(
         return;
       }
 
-      designationName = designation.name;
+      designationName =
+        designation.name;
     }
 
     if (newManagerId !== null) {
-      if (newManagerId === employeeId) {
+      if (
+        newManagerId === employeeId
+      ) {
         res.status(400).json({
           message:
             'Employee cannot report to themselves',
@@ -267,8 +367,13 @@ router.put(
         return;
       }
 
-      const manager = await db('employees')
-        .where('employees.id', newManagerId)
+      const manager = await db(
+        'employees'
+      )
+        .where(
+          'employees.id',
+          newManagerId
+        )
         .first();
 
       if (!manager) {
@@ -289,43 +394,54 @@ router.put(
             phone !== undefined
               ? phone || null
               : existing.phone,
+
           address:
             address !== undefined
               ? address || null
               : existing.address,
+
           department_id:
             departmentId !== undefined
               ? newDepartmentId
               : existing.department_id,
+
           designation:
             newDesignationId !== null
               ? designationName
               : existing.designation,
+
           designation_id:
             designationId !== undefined
               ? newDesignationId
               : existing.designation_id,
+
           manager_id:
             managerId !== undefined
               ? newManagerId
               : existing.manager_id,
+
           employment_type:
             employmentType !== undefined
               ? employmentType || null
               : existing.employment_type,
+
           work_location:
             workLocation !== undefined
               ? workLocation || null
               : existing.work_location,
+
           joining_date:
             joiningDate !== undefined
               ? joiningDate || null
               : existing.joining_date,
+
           status:
             status !== undefined
               ? status
               : existing.status,
-          updated_at: trx.fn.now(),
+
+          updated_at:
+            trx.fn.now(),
         };
 
         if (metadata !== undefined) {
@@ -334,7 +450,10 @@ router.put(
         }
 
         await trx('employees')
-          .where('id', employeeId)
+          .where(
+            'id',
+            employeeId
+          )
           .update(employeeUpdate);
 
         if (
@@ -345,15 +464,20 @@ router.put(
             string,
             unknown
           > = {
-            updated_at: trx.fn.now(),
+            updated_at:
+              trx.fn.now(),
           };
 
-          if (firstName !== undefined) {
+          if (
+            firstName !== undefined
+          ) {
             userUpdate.first_name =
               firstName;
           }
 
-          if (lastName !== undefined) {
+          if (
+            lastName !== undefined
+          ) {
             userUpdate.last_name =
               lastName;
           }
@@ -377,8 +501,10 @@ router.put(
               existing.user_id
             )
             .update({
-              is_active: shouldBeActive,
-              updated_at: trx.fn.now(),
+              is_active:
+                shouldBeActive,
+              updated_at:
+                trx.fn.now(),
             });
         }
       }
@@ -417,7 +543,8 @@ router.put(
       .first();
 
     res.json({
-      message: 'Employee updated successfully',
+      message:
+        'Employee updated successfully',
       employee: updated,
     });
   })
@@ -432,7 +559,10 @@ router.patch(
   auth,
   role(...ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const employeeId = Number(req.params.id);
+    const employeeId = Number(
+      req.params.id
+    );
+
     const { status } = req.body;
 
     if (!Number.isInteger(employeeId)) {
@@ -444,12 +574,16 @@ router.patch(
 
     if (!isValidStatus(status)) {
       res.status(400).json({
-        message: `Invalid status. Allowed values: ${EMPLOYEE_STATUSES.join(', ')}`,
+        message: `Invalid status. Allowed values: ${EMPLOYEE_STATUSES.join(
+          ', '
+        )}`,
       });
       return;
     }
 
-    const employee = await db('employees')
+    const employee = await db(
+      'employees'
+    )
       .where('id', employeeId)
       .first();
 
@@ -467,17 +601,25 @@ router.patch(
     await db.transaction(
       async (trx: Knex.Transaction) => {
         await trx('employees')
-          .where('id', employeeId)
+          .where(
+            'id',
+            employeeId
+          )
           .update({
             status,
-            updated_at: trx.fn.now(),
+            updated_at:
+              trx.fn.now(),
           });
 
         await trx('users')
-          .where('id', employee.user_id)
+          .where(
+            'id',
+            employee.user_id
+          )
           .update({
             is_active: isActive,
-            updated_at: trx.fn.now(),
+            updated_at:
+              trx.fn.now(),
           });
       }
     );
@@ -613,7 +755,9 @@ router.put(
     } = req.body;
 
     if (
-      !Number.isInteger(departmentId)
+      !Number.isInteger(
+        departmentId
+      )
     ) {
       res.status(400).json({
         message:
@@ -636,7 +780,10 @@ router.put(
 
     const department =
       await db('departments')
-        .where('id', departmentId)
+        .where(
+          'id',
+          departmentId
+        )
         .first();
 
     if (!department) {
@@ -669,13 +816,17 @@ router.put(
 
     const [updated] =
       await db('departments')
-        .where('id', departmentId)
+        .where(
+          'id',
+          departmentId
+        )
         .update({
           name: name.trim(),
           description:
             description?.trim() ||
             null,
-          updated_at: db.fn.now(),
+          updated_at:
+            db.fn.now(),
         })
         .returning('*');
 
@@ -700,7 +851,9 @@ router.delete(
       Number(req.params.id);
 
     if (
-      !Number.isInteger(departmentId)
+      !Number.isInteger(
+        departmentId
+      )
     ) {
       res.status(400).json({
         message:
@@ -711,7 +864,10 @@ router.delete(
 
     const department =
       await db('departments')
-        .where('id', departmentId)
+        .where(
+          'id',
+          departmentId
+        )
         .first();
 
     if (!department) {
@@ -762,7 +918,10 @@ router.delete(
           });
 
         await trx('departments')
-          .where('id', departmentId)
+          .where(
+            'id',
+            departmentId
+          )
           .delete();
       }
     );
@@ -1351,4 +1510,708 @@ router.patch(
   })
 );
 
+/* =========================================================
+   EMPLOYEE DOCUMENTS - LIST
+   ========================================================= */
+
+router.get(
+  '/employees/:id/documents',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN',
+    'MANAGER',
+    'EMPLOYEE'
+  ),
+  asyncHandler(async (req, res) => {
+    const employeeId =
+      Number(req.params.id);
+
+    if (
+      !Number.isInteger(
+        employeeId
+      )
+    ) {
+      res.status(400).json({
+        message:
+          'Invalid employee ID',
+      });
+      return;
+    }
+
+    const employee =
+      await db('employees')
+        .where(
+          'id',
+          employeeId
+        )
+        .first();
+
+    if (!employee) {
+      res.status(404).json({
+        message:
+          'Employee not found',
+      });
+      return;
+    }
+
+    const currentUser =
+      req.user!;
+
+    if (
+      currentUser.role ===
+      'EMPLOYEE'
+    ) {
+      if (
+        currentUser.employeeId !==
+        employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only view your own documents',
+        });
+        return;
+      }
+    }
+
+    if (
+      currentUser.role ===
+      'MANAGER'
+    ) {
+      if (
+        employee.manager_id !==
+        currentUser.employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only view documents for your team',
+        });
+        return;
+      }
+    }
+
+    const documents =
+      await db('employee_documents')
+        .leftJoin(
+          'users as uploader',
+          'uploader.id',
+          'employee_documents.uploaded_by'
+        )
+        .select(
+          'employee_documents.*',
+          db.raw(
+            `CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name`
+          )
+        )
+        .where(
+          'employee_documents.employee_id',
+          employeeId
+        )
+        .orderBy(
+          'employee_documents.upload_date',
+          'desc'
+        );
+
+    res.json({
+      employeeId,
+      documents,
+    });
+  })
+);
+
+/* =========================================================
+   EMPLOYEE DOCUMENT - CREATE
+   ========================================================= */
+
+router.post(
+  '/employees/:id/documents',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN',
+    'MANAGER',
+    'EMPLOYEE'
+  ),
+  asyncHandler(async (req, res) => {
+    const employeeId =
+      Number(req.params.id);
+
+    if (
+      !Number.isInteger(
+        employeeId
+      )
+    ) {
+      res.status(400).json({
+        message:
+          'Invalid employee ID',
+      });
+      return;
+    }
+
+    const employee =
+      await db('employees')
+        .where(
+          'id',
+          employeeId
+        )
+        .first();
+
+    if (!employee) {
+      res.status(404).json({
+        message:
+          'Employee not found',
+      });
+      return;
+    }
+
+    const currentUser =
+      req.user!;
+
+    if (
+      currentUser.role ===
+      'EMPLOYEE'
+    ) {
+      if (
+        currentUser.employeeId !==
+        employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only add documents to your own profile',
+        });
+        return;
+      }
+    }
+
+    if (
+      currentUser.role ===
+      'MANAGER'
+    ) {
+      if (
+        employee.manager_id !==
+        currentUser.employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only add documents for your team',
+        });
+        return;
+      }
+    }
+
+    const {
+      documentName,
+      documentType,
+      fileUrl,
+      status,
+      description,
+    } = req.body;
+
+    if (
+      !documentName ||
+      typeof documentName !==
+        'string' ||
+      !documentName.trim()
+    ) {
+      res.status(400).json({
+        message:
+          'Document name is required',
+      });
+      return;
+    }
+
+    if (
+      !isValidDocumentType(
+        documentType
+      )
+    ) {
+      res.status(400).json({
+        message:
+          `Invalid document type. Allowed values: ${DOCUMENT_TYPES.join(
+            ', '
+          )}`,
+      });
+      return;
+    }
+
+    if (
+      fileUrl !== undefined &&
+      fileUrl !== null &&
+      fileUrl !== '' &&
+      typeof fileUrl !==
+        'string'
+    ) {
+      res.status(400).json({
+        message:
+          'fileUrl must be a string',
+      });
+      return;
+    }
+
+    if (
+      status !== undefined &&
+      !isValidDocumentStatus(
+        status
+      )
+    ) {
+      res.status(400).json({
+        message:
+          `Invalid document status. Allowed values: ${DOCUMENT_STATUSES.join(
+            ', '
+          )}`,
+      });
+      return;
+    }
+
+    const [document] =
+      await db('employee_documents')
+        .insert({
+          employee_id:
+            employeeId,
+
+          document_name:
+            documentName.trim(),
+
+          document_type:
+            documentType,
+
+          uploaded_by:
+            currentUser.id,
+
+          file_url:
+            fileUrl || null,
+
+          status:
+            status || 'PENDING',
+
+          description:
+            description?.trim() ||
+            null,
+        })
+        .returning('*');
+
+    try {
+      await db('audit_logs').insert({
+        user_id:
+          currentUser.id,
+        action:
+          'CREATE_EMPLOYEE_DOCUMENT',
+        entity_type:
+          'employee_documents',
+        entity_id:
+          document.id,
+        details:
+          JSON.stringify({
+            employeeId,
+            documentName:
+              document.document_name,
+            documentType:
+              document.document_type,
+          }),
+      });
+    } catch {
+      // Audit logging should not
+      // break document creation.
+    }
+
+    res.status(201).json({
+      message:
+        'Employee document added successfully',
+      document,
+    });
+  })
+);
+
+/* =========================================================
+   EMPLOYEE DOCUMENT - UPDATE
+   ========================================================= */
+
+router.put(
+  '/employees/:employeeId/documents/:documentId',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN',
+    'MANAGER',
+    'EMPLOYEE'
+  ),
+  asyncHandler(async (req, res) => {
+    const employeeId =
+      Number(req.params.employeeId);
+
+    const documentId =
+      Number(req.params.documentId);
+
+    if (
+      !Number.isInteger(
+        employeeId
+      ) ||
+      !Number.isInteger(
+        documentId
+      )
+    ) {
+      res.status(400).json({
+        message:
+          'Invalid employee or document ID',
+      });
+      return;
+    }
+
+    const document =
+      await db('employee_documents')
+        .where(
+          'id',
+          documentId
+        )
+        .where(
+          'employee_id',
+          employeeId
+        )
+        .first();
+
+    if (!document) {
+      res.status(404).json({
+        message:
+          'Employee document not found',
+      });
+      return;
+    }
+
+    const employee =
+      await db('employees')
+        .where(
+          'id',
+          employeeId
+        )
+        .first();
+
+    if (!employee) {
+      res.status(404).json({
+        message:
+          'Employee not found',
+      });
+      return;
+    }
+
+    const currentUser =
+      req.user!;
+
+    if (
+      currentUser.role ===
+      'EMPLOYEE'
+    ) {
+      if (
+        currentUser.employeeId !==
+        employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only update your own documents',
+        });
+        return;
+      }
+    }
+
+    if (
+      currentUser.role ===
+      'MANAGER'
+    ) {
+      if (
+        employee.manager_id !==
+        currentUser.employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only update documents for your team',
+        });
+        return;
+      }
+    }
+
+    const {
+      documentName,
+      documentType,
+      fileUrl,
+      status,
+      description,
+    } = req.body;
+
+    if (
+      documentName !== undefined &&
+      (
+        typeof documentName !==
+          'string' ||
+        !documentName.trim()
+      )
+    ) {
+      res.status(400).json({
+        message:
+          'Document name must be a non-empty string',
+      });
+      return;
+    }
+
+    if (
+      documentType !== undefined &&
+      !isValidDocumentType(
+        documentType
+      )
+    ) {
+      res.status(400).json({
+        message:
+          `Invalid document type. Allowed values: ${DOCUMENT_TYPES.join(
+            ', '
+          )}`,
+      });
+      return;
+    }
+
+    if (
+      status !== undefined &&
+      !isValidDocumentStatus(
+        status
+      )
+    ) {
+      res.status(400).json({
+        message:
+          `Invalid document status. Allowed values: ${DOCUMENT_STATUSES.join(
+            ', '
+          )}`,
+      });
+      return;
+    }
+
+    const updateData: Record<
+      string,
+      unknown
+    > = {
+      updated_at:
+        db.fn.now(),
+    };
+
+    if (
+      documentName !== undefined
+    ) {
+      updateData.document_name =
+        documentName.trim();
+    }
+
+    if (
+      documentType !== undefined
+    ) {
+      updateData.document_type =
+        documentType;
+    }
+
+    if (
+      fileUrl !== undefined
+    ) {
+      updateData.file_url =
+        fileUrl || null;
+    }
+
+    if (
+      status !== undefined
+    ) {
+      updateData.status =
+        status;
+    }
+
+    if (
+      description !== undefined
+    ) {
+      updateData.description =
+        description?.trim() ||
+        null;
+    }
+
+    const [updated] =
+      await db(
+        'employee_documents'
+      )
+        .where(
+          'id',
+          documentId
+        )
+        .update(updateData)
+        .returning('*');
+
+    try {
+      await db('audit_logs').insert({
+        user_id:
+          currentUser.id,
+        action:
+          'UPDATE_EMPLOYEE_DOCUMENT',
+        entity_type:
+          'employee_documents',
+        entity_id:
+          documentId,
+        details:
+          JSON.stringify({
+            employeeId,
+            documentId,
+          }),
+      });
+    } catch {
+      // Audit logging should not
+      // break document update.
+    }
+
+    res.json({
+      message:
+        'Employee document updated successfully',
+      document: updated,
+    });
+  })
+);
+
+/* =========================================================
+   EMPLOYEE DOCUMENT - DELETE
+   ========================================================= */
+
+router.delete(
+  '/employees/:employeeId/documents/:documentId',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN',
+    'MANAGER',
+    'EMPLOYEE'
+  ),
+  asyncHandler(async (req, res) => {
+    const employeeId =
+      Number(req.params.employeeId);
+
+    const documentId =
+      Number(req.params.documentId);
+
+    if (
+      !Number.isInteger(
+        employeeId
+      ) ||
+      !Number.isInteger(
+        documentId
+      )
+    ) {
+      res.status(400).json({
+        message:
+          'Invalid employee or document ID',
+      });
+      return;
+    }
+
+    const document =
+      await db('employee_documents')
+        .where(
+          'id',
+          documentId
+        )
+        .where(
+          'employee_id',
+          employeeId
+        )
+        .first();
+
+    if (!document) {
+      res.status(404).json({
+        message:
+          'Employee document not found',
+      });
+      return;
+    }
+
+    const employee =
+      await db('employees')
+        .where(
+          'id',
+          employeeId
+        )
+        .first();
+
+    if (!employee) {
+      res.status(404).json({
+        message:
+          'Employee not found',
+      });
+      return;
+    }
+
+    const currentUser =
+      req.user!;
+
+    if (
+      currentUser.role ===
+      'EMPLOYEE'
+    ) {
+      if (
+        currentUser.employeeId !==
+        employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only delete your own documents',
+        });
+        return;
+      }
+    }
+
+    if (
+      currentUser.role ===
+      'MANAGER'
+    ) {
+      if (
+        employee.manager_id !==
+        currentUser.employeeId
+      ) {
+        res.status(403).json({
+          message:
+            'You can only delete documents for your team',
+        });
+        return;
+      }
+    }
+
+    await db(
+      'employee_documents'
+    )
+      .where(
+        'id',
+        documentId
+      )
+      .delete();
+
+    try {
+      await db('audit_logs').insert({
+        user_id:
+          currentUser.id,
+        action:
+          'DELETE_EMPLOYEE_DOCUMENT',
+        entity_type:
+          'employee_documents',
+        entity_id:
+          documentId,
+        details:
+          JSON.stringify({
+            employeeId,
+            documentName:
+              document.document_name,
+            documentType:
+              document.document_type,
+          }),
+      });
+    } catch {
+      // Audit logging should not
+      // break document deletion.
+    }
+
+    res.json({
+      message:
+        'Employee document deleted successfully',
+      employeeId,
+      documentId,
+    });
+  })
+);
+
 export default router;
+

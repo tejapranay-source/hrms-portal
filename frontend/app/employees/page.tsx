@@ -21,9 +21,22 @@ type IconName =
   | 'building'
   | 'briefcase'
   | 'plus'
-  | 'refresh';
+  | 'refresh'
+  | 'file'
+  | 'shield'
+  | 'lock'
+  | 'unlock'
+  | 'key'
+  | 'clock'
+  | 'arrow';
 
-function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
+function Icon({
+  name,
+  size = 17,
+}: {
+  name: IconName;
+  size?: number;
+}) {
   const common = {
     width: size,
     height: size,
@@ -38,24 +51,129 @@ function Icon({ name, size = 17 }: { name: IconName; size?: number }) {
 
   switch (name) {
     case 'eye':
-      return <svg {...common}><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="2.5" />
+        </svg>
+      );
+
     case 'edit':
-      return <svg {...common}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+        </svg>
+      );
+
     case 'status':
-      return <svg {...common}><path d="M13 2 3 14h8l-1 8 10-12h-8Z" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M13 2 3 14h8l-1 8 10-12h-8Z" />
+        </svg>
+      );
+
     case 'users':
-      return <svg {...common}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+
     case 'building':
-      return <svg {...common}><path d="M3 21h18" /><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16" /><path d="M16 8h3a2 2 0 0 1 2 2v11" /><path d="M9 7h3M9 11h3M9 15h3M9 19h3" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M3 21h18" />
+          <path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16" />
+          <path d="M16 8h3a2 2 0 0 1 2 2v11" />
+          <path d="M9 7h3M9 11h3M9 15h3M9 19h3" />
+        </svg>
+      );
+
     case 'briefcase':
-      return <svg {...common}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2" /></svg>;
+      return (
+        <svg {...common}>
+          <rect x="3" y="7" width="18" height="13" rx="2" />
+          <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2" />
+        </svg>
+      );
+
     case 'plus':
-      return <svg {...common}><path d="M12 5v14M5 12h14" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      );
+
     case 'refresh':
-      return <svg {...common}><path d="M20 11a8.1 8.1 0 0 0-14.9-3L3 11" /><path d="M3 5v6h6" /><path d="M4 13a8.1 8.1 0 0 0 14.9 3L21 13" /><path d="M21 19v-6h-6" /></svg>;
+      return (
+        <svg {...common}>
+          <path d="M20 11a8.1 8.1 0 0 0-14.9-3L3 11" />
+          <path d="M3 5v6h6" />
+          <path d="M4 13a8.1 8.1 0 0 0 14.9 3L21 13" />
+          <path d="M21 19v-6h-6" />
+        </svg>
+      );
+
+    case 'file':
+      return (
+        <svg {...common}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+          <path d="M14 2v6h6" />
+          <path d="M8 13h8M8 17h6" />
+        </svg>
+      );
+
+    case 'shield':
+      return (
+        <svg {...common}>
+          <path d="M12 3 20 6v5c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10V6l8-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      );
+
+    case 'lock':
+      return (
+        <svg {...common}>
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+        </svg>
+      );
+
+    case 'unlock':
+      return (
+        <svg {...common}>
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 7-2" />
+        </svg>
+      );
+
+    case 'key':
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="15" r="4" />
+          <path d="m11 12 9-9M16 5l3 3M14 7l3 3" />
+        </svg>
+      );
+
+    case 'clock':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" />
+        </svg>
+      );
+
+    case 'arrow':
+      return (
+        <svg {...common}>
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      );
   }
 }
-
 
 type Employee = {
   id: number;
@@ -167,6 +285,56 @@ type ProfileData = {
     designation?: string;
   };
   activity?: any[];
+};
+
+type EmployeeDocument = {
+  id: number;
+  employee_id: number;
+  document_name: string;
+  document_type: string;
+  file_url?: string | null;
+  description?: string | null;
+  status: string;
+  uploaded_by?: number | null;
+  uploaded_by_name?: string | null;
+  uploaded_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type DocumentForm = {
+  documentName: string;
+  documentType: string;
+  fileUrl: string;
+  description: string;
+  status: string;
+};
+
+const DOCUMENT_TYPES = [
+  'RESUME',
+  'ID_PROOF',
+  'ADDRESS_PROOF',
+  'OFFER_LETTER',
+  'JOINING_DOCUMENTS',
+  'EMPLOYMENT_AGREEMENT',
+  'CERTIFICATE',
+  'OTHER_HR_DOCUMENT',
+];
+
+const DOCUMENT_STATUSES = [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'EXPIRED',
+  'ACTIVE',
+];
+
+const emptyDocumentForm: DocumentForm = {
+  documentName: '',
+  documentType: 'OTHER_HR_DOCUMENT',
+  fileUrl: '',
+  description: '',
+  status: 'PENDING',
 };
 
 type AddEmployeeForm = {
@@ -369,6 +537,15 @@ function statusClass(status: string) {
   );
 }
 
+function documentStatusClass(
+  status: string
+) {
+  return (
+    'document-status document-status-' +
+    status.toLowerCase()
+  );
+}
+
 export default function EmployeesPage() {
   /*
   |--------------------------------------------------------------------------
@@ -409,6 +586,9 @@ export default function EmployeesPage() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [currentRole, setCurrentRole] =
+    useState<string>('EMPLOYEE');
 
   const [error, setError] =
     useState('');
@@ -584,6 +764,57 @@ export default function EmployeesPage() {
     profileError,
     setProfileError,
   ] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | DOCUMENTS
+  |--------------------------------------------------------------------------
+  */
+  const [
+    employeeDocuments,
+    setEmployeeDocuments,
+  ] = useState<EmployeeDocument[]>(
+    []
+  );
+
+  const [
+    documentsLoading,
+    setDocumentsLoading,
+  ] = useState(false);
+
+  const [
+    documentsError,
+    setDocumentsError,
+  ] = useState('');
+
+  const [
+    documentsSuccess,
+    setDocumentsSuccess,
+  ] = useState('');
+
+  const [
+    showDocumentForm,
+    setShowDocumentForm,
+  ] = useState(false);
+
+  const [
+    editingDocument,
+    setEditingDocument,
+  ] = useState<EmployeeDocument | null>(
+    null
+  );
+
+  const [
+    documentForm,
+    setDocumentForm,
+  ] = useState<DocumentForm>(
+    emptyDocumentForm
+  );
+
+  const [
+    documentSaving,
+    setDocumentSaving,
+  ] = useState(false);
 
   /*
   |--------------------------------------------------------------------------
@@ -896,190 +1127,543 @@ export default function EmployeesPage() {
     }
   }
 
-  useEffect(() => {
-    loadOptions();
-  }, []);
+ /*
+|--------------------------------------------------------------------------
+| DOCUMENTS - LOAD
+|--------------------------------------------------------------------------
+*/
+async function loadEmployeeDocuments(
+  employeeId: number
+) {
+  setDocumentsLoading(true);
+  setDocumentsError('');
 
-  useEffect(() => {
-    loadEmployees();
-  }, [
-    page,
-    limit,
-    search,
-    departmentFilter,
-    designationFilter,
-    managerFilter,
-    employmentTypeFilter,
-    statusFilter,
-    locationFilter,
-    sortBy,
-    sortOrder,
-  ]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOCATIONS
-  |--------------------------------------------------------------------------
-  */
-  const locations = useMemo(() => {
-    return Array.from(
-      new Set(
-        employees
-          .map(
-            (employee) =>
-              employee.work_location
-          )
-          .filter(Boolean)
-      )
-    ) as string[];
-  }, [employees]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | ADD EMPLOYEE
-  |--------------------------------------------------------------------------
-  */
-  async function addEmployee(
-    event: FormEvent
-  ) {
-    event.preventDefault();
-
-    setAdding(true);
-    setAddError('');
-    setAddSuccess('');
-
-    try {
-      const response =
-        await apiRequest(
-          `${API}/employees`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              firstName:
-                addForm.firstName,
-              lastName:
-                addForm.lastName,
-              email:
-                addForm.email,
-              phone:
-                addForm.phone,
-              address:
-                addForm.address,
-              employeeCode:
-                addForm.employeeCode,
-              joiningDate:
-                addForm.joiningDate,
-              departmentId:
-                addForm.departmentId
-                  ? Number(
-                      addForm.departmentId
-                    )
-                  : null,
-              designationId:
-                addForm.designationId
-                  ? Number(
-                      addForm.designationId
-                    )
-                  : null,
-              designation:
-                addForm.designationId
-                  ? designationsList.find(
-                      (item) =>
-                        String(
-                          item.id
-                        ) ===
-                        addForm.designationId
-                    )?.name
-                  : null,
-              managerId:
-                addForm.managerId
-                  ? Number(
-                      addForm.managerId
-                    )
-                  : null,
-              employmentType:
-                addForm.employmentType,
-              workLocation:
-                addForm.workLocation,
-              status:
-                addForm.status,
-              loginEmail:
-                addForm.loginEmail ||
-                addForm.email,
-              temporaryPassword:
-                addForm.temporaryPassword,
-              role:
-                addForm.role,
-              isActive:
-                addForm.isActive,
-            }),
-          }
-        );
-
-      setAddSuccess(
-        response.message ||
-          'Employee created successfully'
+  try {
+    const data =
+      await apiRequest(
+        `${API}/employee-management/employees/${employeeId}/documents`
       );
 
-      setAddForm(
-        emptyAddForm
-      );
+    const documents =
+      Array.isArray(data)
+        ? data
+        : data.data ||
+          data.documents ||
+          [];
 
-      await loadOptions();
-      await loadEmployees();
+    setEmployeeDocuments(
+      documents
+    );
+  } catch (err) {
+    setEmployeeDocuments([]);
 
-      setTimeout(() => {
-        setShowAdd(false);
-        setAddSuccess('');
-      }, 900);
-    } catch (err) {
-      setAddError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to create employee'
-      );
-    } finally {
-      setAdding(false);
-    }
+    setDocumentsError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to load employee documents'
+    );
+  } finally {
+    setDocumentsLoading(false);
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOCUMENTS - OPEN ADD FORM
+|--------------------------------------------------------------------------
+*/
+function openAddDocument() {
+  setEditingDocument(null);
+
+  setDocumentForm({
+    ...emptyDocumentForm,
+  });
+
+  setDocumentsError('');
+  setDocumentsSuccess('');
+  setShowDocumentForm(true);
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOCUMENTS - OPEN EDIT FORM
+|--------------------------------------------------------------------------
+*/
+function openEditDocument(
+  document: EmployeeDocument
+) {
+  setEditingDocument(
+    document
+  );
+
+  setDocumentForm({
+    documentName:
+      document.document_name ||
+      '',
+    documentType:
+      document.document_type ||
+      'OTHER_HR_DOCUMENT',
+    fileUrl:
+      document.file_url ||
+      '',
+    description:
+      document.description ||
+      '',
+    status:
+      document.status ||
+      'PENDING',
+  });
+
+  setDocumentsError('');
+  setDocumentsSuccess('');
+  setShowDocumentForm(true);
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOCUMENTS - SAVE
+|--------------------------------------------------------------------------
+*/
+async function saveEmployeeDocument(
+  event: FormEvent
+) {
+  event.preventDefault();
+
+  if (!selectedEmployee) {
+    return;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PROFILE
-  |--------------------------------------------------------------------------
-  */
-  async function openProfile(
-    employee: Employee
+  setDocumentSaving(true);
+  setDocumentsError('');
+  setDocumentsSuccess('');
+
+  if (
+    !documentForm.documentName.trim()
   ) {
-    setSelectedEmployee(
-      employee
+    setDocumentsError(
+      'Document name is required.'
     );
 
-    setProfile(null);
-    setProfileError('');
-    setProfileLoading(true);
-    setShowProfile(true);
-
-    try {
-      const data =
-        await apiRequest(
-          `${API}/employees/${employee.id}/profile`
-        );
-
-      setProfile(
-        data.data || data
-      );
-    } catch (err) {
-      setProfileError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load profile'
-      );
-    } finally {
-      setProfileLoading(false);
-    }
+    setDocumentSaving(false);
+    return;
   }
 
+  if (
+    !documentForm.fileUrl.trim()
+  ) {
+    setDocumentsError(
+      'File URL or document link is required.'
+    );
+
+    setDocumentSaving(false);
+    return;
+  }
+
+  try {
+    const payload = {
+      documentName:
+        documentForm.documentName.trim(),
+
+      documentType:
+        documentForm.documentType,
+
+      fileUrl:
+        documentForm.fileUrl.trim(),
+
+      description:
+        documentForm.description.trim(),
+
+      status:
+        documentForm.status,
+    };
+
+    let response;
+
+    /*
+    |----------------------------------------------------------------------
+    | UPDATE EXISTING DOCUMENT
+    |----------------------------------------------------------------------
+    */
+    if (editingDocument) {
+      response =
+        await apiRequest(
+          `${API}/employee-management/employees/${selectedEmployee.id}/documents/${editingDocument.id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify(
+              payload
+            ),
+          }
+        );
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | ADD NEW DOCUMENT
+    |----------------------------------------------------------------------
+    */
+    else {
+      response =
+        await apiRequest(
+          `${API}/employee-management/employees/${selectedEmployee.id}/documents`,
+          {
+            method: 'POST',
+            body: JSON.stringify(
+              payload
+            ),
+          }
+        );
+    }
+
+    setDocumentsSuccess(
+      response.message ||
+        (editingDocument
+          ? 'Document updated successfully'
+          : 'Document added successfully')
+    );
+
+    setDocumentForm({
+      ...emptyDocumentForm,
+    });
+
+    setEditingDocument(null);
+    setShowDocumentForm(false);
+
+    await loadEmployeeDocuments(
+      selectedEmployee.id
+    );
+  } catch (err) {
+    setDocumentsError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to save document'
+    );
+  } finally {
+    setDocumentSaving(false);
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| DOCUMENTS - DELETE
+|--------------------------------------------------------------------------
+*/
+async function deleteEmployeeDocument(
+  document: EmployeeDocument
+) {
+  if (!selectedEmployee) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `Delete document "${document.document_name}"?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  setDocumentsError('');
+  setDocumentsSuccess('');
+
+  try {
+    const response =
+      await apiRequest(
+        `${API}/employee-management/employees/${selectedEmployee.id}/documents/${document.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+    setDocumentsSuccess(
+      response.message ||
+        'Document deleted successfully'
+    );
+
+    await loadEmployeeDocuments(
+      selectedEmployee.id
+    );
+  } catch (err) {
+    setDocumentsError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to delete document'
+    );
+  }
+}
+
+useEffect(() => {
+  loadOptions();
+
+  try {
+    const rawUser =
+      localStorage.getItem(
+        'hrms_user'
+      );
+
+    if (rawUser) {
+      const parsedUser =
+        JSON.parse(rawUser);
+
+      setCurrentRole(
+        parsedUser?.role ||
+          'EMPLOYEE'
+      );
+    }
+  } catch {
+    setCurrentRole('EMPLOYEE');
+  }
+}, []);
+
+useEffect(() => {
+  loadEmployees();
+}, [
+  page,
+  limit,
+  search,
+  departmentFilter,
+  designationFilter,
+  managerFilter,
+  employmentTypeFilter,
+  statusFilter,
+  locationFilter,
+  sortBy,
+  sortOrder,
+]);
+
+/*
+|--------------------------------------------------------------------------
+| LOCATIONS
+|--------------------------------------------------------------------------
+*/
+const locations = useMemo(() => {
+  return Array.from(
+    new Set(
+      employees
+        .map(
+          (employee) =>
+            employee.work_location
+        )
+        .filter(Boolean)
+    )
+  ) as string[];
+}, [employees]);
+
+/*
+|--------------------------------------------------------------------------
+| ADD EMPLOYEE
+|--------------------------------------------------------------------------
+*/
+async function addEmployee(
+  event: FormEvent
+) {
+  event.preventDefault();
+
+  setAddError('');
+  setAddSuccess('');
+
+  const requiredFields = [
+    {
+      value: addForm.firstName,
+      label: 'First Name',
+    },
+    {
+      value: addForm.lastName,
+      label: 'Last Name',
+    },
+    {
+      value: addForm.email,
+      label: 'Email',
+    },
+    {
+      value: addForm.employeeCode,
+      label: 'Employee Code',
+    },
+    {
+      value:
+        addForm.temporaryPassword,
+      label: 'Temporary Password',
+    },
+  ];
+
+  const missingField =
+    requiredFields.find(
+      (field) =>
+        !field.value.trim()
+    );
+
+  if (missingField) {
+    setAddError(
+      `${missingField.label} is required.`
+    );
+    return;
+  }
+
+  setAdding(true);
+
+  try {
+    const response =
+      await apiRequest(
+        `${API}/employees`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            firstName:
+              addForm.firstName,
+
+            lastName:
+              addForm.lastName,
+
+            email:
+              addForm.email,
+
+            phone:
+              addForm.phone,
+
+            address:
+              addForm.address,
+
+            employeeCode:
+              addForm.employeeCode,
+
+            joiningDate:
+              addForm.joiningDate,
+
+            departmentId:
+              addForm.departmentId
+                ? Number(
+                    addForm.departmentId
+                  )
+                : null,
+
+            designationId:
+              addForm.designationId
+                ? Number(
+                    addForm.designationId
+                  )
+                : null,
+
+            designation:
+              addForm.designationId
+                ? designationsList.find(
+                    (item) =>
+                      String(
+                        item.id
+                      ) ===
+                      addForm.designationId
+                  )?.name
+                : null,
+
+            managerId:
+              addForm.managerId
+                ? Number(
+                    addForm.managerId
+                  )
+                : null,
+
+            employmentType:
+              addForm.employmentType,
+
+            workLocation:
+              addForm.workLocation,
+
+            status:
+              addForm.status,
+
+            loginEmail:
+              addForm.loginEmail ||
+              addForm.email,
+
+            password:
+              addForm.temporaryPassword,
+
+            role:
+              addForm.role,
+
+            isActive:
+              addForm.isActive,
+          }),
+        }
+      );
+
+    setAddSuccess(
+      response.message ||
+        'Employee created successfully'
+    );
+
+    setAddForm(
+      emptyAddForm
+    );
+
+    await loadOptions();
+    await loadEmployees();
+
+    setTimeout(() => {
+      setShowAdd(false);
+      setAddSuccess('');
+    }, 900);
+  } catch (err) {
+    setAddError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to create employee'
+    );
+  } finally {
+    setAdding(false);
+  }
+}
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE
+|--------------------------------------------------------------------------
+*/
+async function openProfile(
+  employee: Employee
+) {
+  setSelectedEmployee(
+    employee
+  );
+
+  setProfile(null);
+  setProfileError('');
+  setProfileLoading(true);
+
+  setEmployeeDocuments([]);
+  setDocumentsError('');
+  setDocumentsSuccess('');
+  setShowDocumentForm(false);
+
+  setShowProfile(true);
+
+  try {
+    const [
+      profileResponse,
+    ] = await Promise.all([
+      apiRequest(
+        `${API}/employees/${employee.id}/profile`
+      ),
+
+      loadEmployeeDocuments(
+        employee.id
+      ),
+    ]);
+
+    setProfile(
+      profileResponse.data ||
+        profileResponse
+    );
+  } catch (err) {
+    setProfileError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to load profile'
+    );
+  } finally {
+    setProfileLoading(false);
+  }
+}
   /*
   |--------------------------------------------------------------------------
   | EDIT EMPLOYEE
@@ -1707,10 +2291,23 @@ export default function EmployeesPage() {
         'ON_LEAVE'
     ).length;
 
+  const canManageEmployees =
+    currentRole === 'SUPER_ADMIN' ||
+    currentRole === 'HR_ADMIN';
+
+  const isManager =
+    currentRole === 'MANAGER';
+
+  const isEmployee =
+    currentRole === 'EMPLOYEE';
+
+  const navigateTo = (path: string) => {
+    window.location.href = path;
+  };
+
   return (
     <HRMSLayout title="Employees">
       <div className="page">
-        {/* HEADER */}
         <div className="page-header">
           <div>
             <h2>Employee Management</h2>
@@ -1718,6 +2315,25 @@ export default function EmployeesPage() {
               Manage employees, departments,
               designations and employee status.
             </p>
+
+            <div className="role-context">
+              <Icon
+                name="shield"
+                size={13}
+              />
+              Signed-in role:
+              <strong>
+                {prettyValue(
+                  currentRole
+                )}
+              </strong>
+              ·
+              {canManageEmployees
+                ? 'Full HR/Admin controls'
+                : isManager
+                ? 'Team-level controls'
+                : 'Self-service access'}
+            </div>
           </div>
 
           <div className="header-actions">
@@ -1727,7 +2343,11 @@ export default function EmployeesPage() {
                 setShowStatusManager(true)
               }
             >
-              <Icon name="status" size={16} /> Status Management
+              <Icon
+                name="status"
+                size={16}
+              />
+              Status Management
             </button>
 
             <button
@@ -1736,7 +2356,11 @@ export default function EmployeesPage() {
                 setShowDepartments(true)
               }
             >
-              <Icon name="building" size={16} /> Departments
+              <Icon
+                name="building"
+                size={16}
+              />
+              Departments
             </button>
 
             <button
@@ -1745,7 +2369,11 @@ export default function EmployeesPage() {
                 setShowDesignations(true)
               }
             >
-              <Icon name="briefcase" size={16} /> Designations
+              <Icon
+                name="briefcase"
+                size={16}
+              />
+              Designations
             </button>
 
             <button
@@ -1759,15 +2387,24 @@ export default function EmployeesPage() {
                 setShowAdd(true);
               }}
             >
-              <Icon name="plus" size={16} /> Add Employee
+              <Icon
+                name="plus"
+                size={16}
+              />
+              Add Employee
             </button>
           </div>
         </div>
 
-        {/* STATISTICS */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon"><Icon name="users" size={20} /></div>
+            <div className="stat-icon">
+              <Icon
+                name="users"
+                size={20}
+              />
+            </div>
+
             <div>
               <span>Total Employees</span>
               <strong>
@@ -1782,6 +2419,7 @@ export default function EmployeesPage() {
             <div className="stat-icon active-icon">
               ✓
             </div>
+
             <div>
               <span>Active</span>
               <strong>
@@ -1795,6 +2433,7 @@ export default function EmployeesPage() {
             <div className="stat-icon leave-icon">
               ◷
             </div>
+
             <div>
               <span>On Leave</span>
               <strong>
@@ -1806,8 +2445,12 @@ export default function EmployeesPage() {
 
           <div className="stat-card">
             <div className="stat-icon dept-icon">
-              <Icon name="building" size={20} />
+              <Icon
+                name="building"
+                size={20}
+              />
             </div>
+
             <div>
               <span>Departments</span>
               <strong>
@@ -1818,11 +2461,11 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* FILTERS */}
         <div className="card filters-card">
           <div className="filters-grid">
             <div className="field search-field">
               <label>Search</label>
+
               <input
                 value={search}
                 onChange={(event) => {
@@ -1837,6 +2480,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Department</label>
+
               <select
                 value={
                   departmentFilter
@@ -1871,6 +2515,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Designation</label>
+
               <select
                 value={
                   designationFilter
@@ -1901,7 +2546,9 @@ export default function EmployeesPage() {
                           designation.name
                         }
                       >
-                        {designation.name}
+                        {
+                          designation.name
+                        }
                       </option>
                     )
                   )}
@@ -1910,6 +2557,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Manager</label>
+
               <select
                 value={managerFilter}
                 onChange={(event) => {
@@ -1938,6 +2586,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Employment Type</label>
+
               <select
                 value={
                   employmentTypeFilter
@@ -1968,6 +2617,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Status</label>
+
               <select
                 value={statusFilter}
                 onChange={(event) => {
@@ -1996,6 +2646,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Location</label>
+
               <select
                 value={locationFilter}
                 onChange={(event) => {
@@ -2024,6 +2675,7 @@ export default function EmployeesPage() {
 
             <div className="field">
               <label>Sort</label>
+
               <select
                 value={sortBy}
                 onChange={(event) =>
@@ -2035,15 +2687,19 @@ export default function EmployeesPage() {
                 <option value="created_at">
                   Created Date
                 </option>
+
                 <option value="first_name">
                   Name
                 </option>
+
                 <option value="employee_code">
                   Employee Code
                 </option>
+
                 <option value="joining_date">
                   Joining Date
                 </option>
+
                 <option value="status">
                   Status
                 </option>
@@ -2080,11 +2736,11 @@ export default function EmployeesPage() {
           </div>
         </div>
 
-        {/* DIRECTORY */}
         <div className="card directory-card">
           <div className="section-header">
             <div>
               <h3>Employee Directory</h3>
+
               <span>
                 {pagination.total ||
                   employees.length}{' '}
@@ -2101,7 +2757,11 @@ export default function EmployeesPage() {
                 loadEmployees();
               }}
             >
-              ↻ Refresh
+              <Icon
+                name="refresh"
+                size={15}
+              />
+              Refresh
             </button>
           </div>
 
@@ -2239,7 +2899,10 @@ export default function EmployeesPage() {
                                 )
                               }
                             >
-                              <Icon name="eye" size={17} />
+                              <Icon
+                                name="eye"
+                                size={17}
+                              />
                             </button>
 
                             <button
@@ -2253,7 +2916,10 @@ export default function EmployeesPage() {
                                 )
                               }
                             >
-                              <Icon name="edit" size={17} />
+                              <Icon
+                                name="edit"
+                                size={17}
+                              />
                             </button>
 
                             <button
@@ -2267,7 +2933,10 @@ export default function EmployeesPage() {
                                 )
                               }
                             >
-                              <Icon name="status" size={17} />
+                              <Icon
+                                name="status"
+                                size={17}
+                              />
                             </button>
                           </div>
                         </td>
@@ -2279,7 +2948,6 @@ export default function EmployeesPage() {
             </div>
           )}
 
-          {/* PAGINATION */}
           <div className="pagination">
             <div>
               Showing{' '}
@@ -2313,9 +2981,11 @@ export default function EmployeesPage() {
                 <option value={10}>
                   10 / page
                 </option>
+
                 <option value={20}>
                   20 / page
                 </option>
+
                 <option value={50}>
                   50 / page
                 </option>
@@ -2428,9 +3098,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             firstName:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2449,9 +3117,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             lastName:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2471,14 +3137,10 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             email:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                             loginEmail:
                               current.loginEmail ||
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2496,9 +3158,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             phone:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2516,9 +3176,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             address:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2545,9 +3203,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             employeeCode:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2566,9 +3222,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             joiningDate:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2586,9 +3240,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             departmentId:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2627,9 +3279,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             designationId:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2644,9 +3294,7 @@ export default function EmployeesPage() {
                             item.is_active
                         )
                         .map(
-                          (
-                            designation
-                          ) => (
+                          (designation) => (
                             <option
                               key={
                                 designation.id
@@ -2675,9 +3323,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             managerId:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2714,9 +3360,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             employmentType:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2747,9 +3391,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             workLocation:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2767,18 +3409,12 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             status:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                             isActive:
-                              event
-                                .target
-                                .value !==
-                              'INACTIVE' &&
-                              event
-                                .target
-                                .value !==
-                              'TERMINATED',
+                              event.target.value !==
+                                'INACTIVE' &&
+                              event.target.value !==
+                                'TERMINATED',
                           })
                         )
                       }
@@ -2818,9 +3454,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             loginEmail:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2828,7 +3462,11 @@ export default function EmployeesPage() {
                   </label>
 
                   <label>
-                    Temporary Password
+                    Temporary Password{' '}
+                    <span className="required-mark">
+                      *
+                    </span>
+
                     <input
                       type="text"
                       value={
@@ -2839,9 +3477,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             temporaryPassword:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2859,9 +3495,7 @@ export default function EmployeesPage() {
                           (current) => ({
                             ...current,
                             role:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -2869,12 +3503,15 @@ export default function EmployeesPage() {
                       <option value="EMPLOYEE">
                         Employee
                       </option>
+
                       <option value="MANAGER">
                         Manager
                       </option>
+
                       <option value="HR_ADMIN">
                         HR Admin
                       </option>
+
                       <option value="PAYROLL">
                         Payroll
                       </option>
@@ -2930,6 +3567,7 @@ export default function EmployeesPage() {
                   <h2>
                     Edit Employee
                   </h2>
+
                   <p>
                     Update employee
                     information.
@@ -3413,6 +4051,7 @@ export default function EmployeesPage() {
                 <h2>
                   Employee Status Management
                 </h2>
+
                 <p>
                   Change an employee's
                   employment status.
@@ -3563,9 +4202,7 @@ export default function EmployeesPage() {
                       >
                         <div className="employee-avatar">
                           {employee.first_name
-                            .charAt(
-                              0
-                            )
+                            .charAt(0)
                             .toUpperCase()}
                         </div>
 
@@ -3626,6 +4263,7 @@ export default function EmployeesPage() {
                 <h2>
                   Department Management
                 </h2>
+
                 <p>
                   Create, edit, delete and
                   assign departments.
@@ -3684,9 +4322,7 @@ export default function EmployeesPage() {
                           ) => ({
                             ...current,
                             name:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -3707,9 +4343,7 @@ export default function EmployeesPage() {
                           ) => ({
                             ...current,
                             description:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -3840,9 +4474,7 @@ export default function EmployeesPage() {
                       }
                       onChange={(event) =>
                         setDepartmentAssignEmployee(
-                          event
-                            .target
-                            .value
+                          event.target.value
                         )
                       }
                     >
@@ -3955,6 +4587,7 @@ export default function EmployeesPage() {
                 <h2>
                   Designation Management
                 </h2>
+
                 <p>
                   Create, edit, activate,
                   deactivate and delete
@@ -4014,9 +4647,7 @@ export default function EmployeesPage() {
                           ) => ({
                             ...current,
                             name:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -4037,9 +4668,7 @@ export default function EmployeesPage() {
                           ) => ({
                             ...current,
                             description:
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                           })
                         )
                       }
@@ -4250,6 +4879,7 @@ export default function EmployeesPage() {
                 <h2>
                   Employee Profile
                 </h2>
+
                 <p>
                   Complete employee
                   information and summary.
@@ -4281,9 +4911,7 @@ export default function EmployeesPage() {
                     <div className="profile-hero">
                       <div className="profile-avatar">
                         {selectedEmployee.first_name
-                          .charAt(
-                            0
-                          )
+                          .charAt(0)
                           .toUpperCase()}
                       </div>
 
@@ -4321,6 +4949,7 @@ export default function EmployeesPage() {
                           setShowProfile(
                             false
                           );
+
                           openEditEmployee(
                             selectedEmployee
                           );
@@ -4341,6 +4970,7 @@ export default function EmployeesPage() {
                             <span>
                               First Name
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.first_name
@@ -4352,6 +4982,7 @@ export default function EmployeesPage() {
                             <span>
                               Last Name
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.last_name
@@ -4363,6 +4994,7 @@ export default function EmployeesPage() {
                             <span>
                               Email
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.email
@@ -4374,6 +5006,7 @@ export default function EmployeesPage() {
                             <span>
                               Phone
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.phone ||
@@ -4386,6 +5019,7 @@ export default function EmployeesPage() {
                             <span>
                               Address
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.address ||
@@ -4406,6 +5040,7 @@ export default function EmployeesPage() {
                             <span>
                               Employee Code
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.employee_code
@@ -4417,6 +5052,7 @@ export default function EmployeesPage() {
                             <span>
                               Department
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.department ||
@@ -4429,6 +5065,7 @@ export default function EmployeesPage() {
                             <span>
                               Designation
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.designation ||
@@ -4441,6 +5078,7 @@ export default function EmployeesPage() {
                             <span>
                               Employment Type
                             </span>
+
                             <strong>
                               {prettyValue(
                                 selectedEmployee.employment_type
@@ -4452,6 +5090,7 @@ export default function EmployeesPage() {
                             <span>
                               Joining Date
                             </span>
+
                             <strong>
                               {formatDate(
                                 selectedEmployee.joining_date
@@ -4463,6 +5102,7 @@ export default function EmployeesPage() {
                             <span>
                               Work Location
                             </span>
+
                             <strong>
                               {
                                 selectedEmployee.work_location ||
@@ -4516,6 +5156,7 @@ export default function EmployeesPage() {
                             <span>
                               Role
                             </span>
+
                             <strong>
                               {prettyValue(
                                 selectedEmployee.role
@@ -4527,6 +5168,7 @@ export default function EmployeesPage() {
                             <span>
                               Login Status
                             </span>
+
                             <strong>
                               {selectedEmployee.is_active
                                 ? 'Enabled'
@@ -4542,6 +5184,7 @@ export default function EmployeesPage() {
                         <span>
                           Attendance
                         </span>
+
                         <strong>
                           {profile
                             ?.attendance
@@ -4549,6 +5192,7 @@ export default function EmployeesPage() {
                             0}
                           %
                         </strong>
+
                         <small>
                           {
                             profile
@@ -4563,6 +5207,7 @@ export default function EmployeesPage() {
                         <span>
                           Leave
                         </span>
+
                         <strong>
                           {
                             profile
@@ -4570,6 +5215,7 @@ export default function EmployeesPage() {
                               ?.approvedDays
                           }
                         </strong>
+
                         <small>
                           approved days
                         </small>
@@ -4579,6 +5225,7 @@ export default function EmployeesPage() {
                         <span>
                           Net Salary
                         </span>
+
                         <strong>
                           {formatCurrency(
                             profile
@@ -4586,6 +5233,7 @@ export default function EmployeesPage() {
                               ?.netSalary
                           )}
                         </strong>
+
                         <small>
                           latest payroll
                         </small>
@@ -4595,30 +5243,901 @@ export default function EmployeesPage() {
                         <span>
                           Performance
                         </span>
+
                         <strong>
                           {profile
                             ?.performance
                             ?.averageRating ??
                             '—'}
                         </strong>
+
                         <small>
                           average rating
                         </small>
                       </div>
                     </div>
 
-                    <div className="profile-section">
-                      <h3>
-                        Documents
-                      </h3>
+                    {/* ================================================== */}
+                    {/* EMPLOYEE DOCUMENTS */}
+                    {/* ================================================== */}
+                    <div className="profile-section profile-feature-section">
+                      <div className="feature-section-header">
+                        <div>
+                          <h3>
+                            Employee Documents
+                          </h3>
 
-                      <div className="info-box">
-                        <span>
-                          Document management is
-                          not required for the
-                          current Employee
-                          Management scope.
+                          <p>
+                            Manage resumes, ID
+                            proofs, offer letters,
+                            certificates and other
+                            HR documents.
+                          </p>
+                        </div>
+
+                        <div className="document-header-actions">
+                          <button
+                            type="button"
+                            className="secondary-button small-button"
+                            onClick={() =>
+                              loadEmployeeDocuments(
+                                selectedEmployee.id
+                              )
+                            }
+                            disabled={
+                              documentsLoading
+                            }
+                          >
+                            <Icon
+                              name="refresh"
+                              size={14}
+                            />
+
+                            {documentsLoading
+                              ? 'Loading...'
+                              : 'Refresh'}
+                          </button>
+
+                          <button
+                            type="button"
+                            className="primary-button small-button"
+                            disabled={
+                              !canManageEmployees &&
+                              currentRole !==
+                                'MANAGER'
+                            }
+                            onClick={
+                              openAddDocument
+                            }
+                          >
+                            <Icon
+                              name="plus"
+                              size={14}
+                            />
+
+                            Add Document
+                          </button>
+                        </div>
+                      </div>
+
+                      {documentsError && (
+                        <div className="error-box document-message">
+                          {documentsError}
+                        </div>
+                      )}
+
+                      {documentsSuccess && (
+                        <div className="success-box document-message">
+                          {documentsSuccess}
+                        </div>
+                      )}
+
+                      {documentsLoading ? (
+                        <div className="loading document-loading">
+                          Loading employee documents...
+                        </div>
+                      ) : employeeDocuments.length ===
+                        0 ? (
+                        <div className="documents-empty">
+                          <div className="documents-empty-icon">
+                            <Icon
+                              name="file"
+                              size={24}
+                            />
+                          </div>
+
+                          <strong>
+                            No documents uploaded
+                          </strong>
+
+                          <span>
+                            Add the employee's
+                            resume, ID proof,
+                            offer letter or other
+                            HR documents.
+                          </span>
+
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            disabled={
+                              !canManageEmployees &&
+                              currentRole !==
+                                'MANAGER'
+                            }
+                            onClick={
+                              openAddDocument
+                            }
+                          >
+                            <Icon
+                              name="plus"
+                              size={14}
+                            />
+                            Add First Document
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="documents-table">
+                          {employeeDocuments.map(
+                            (document) => (
+                              <div
+                                className="document-row"
+                                key={
+                                  document.id
+                                }
+                              >
+                                <div className="document-icon">
+                                  <Icon
+                                    name="file"
+                                    size={17}
+                                  />
+                                </div>
+
+                                <div className="document-main">
+                                  <strong>
+                                    {
+                                      document.document_name
+                                    }
+                                  </strong>
+
+                                  <span>
+                                    {prettyValue(
+                                      document.document_type
+                                    )}{' '}
+                                    · Uploaded:{' '}
+                                    {formatDate(
+                                      document.uploaded_at ||
+                                        document.created_at
+                                    )}
+                                    {document.uploaded_by_name
+                                      ? ` · By ${document.uploaded_by_name}`
+                                      : ''}
+                                  </span>
+
+                                  {document.description && (
+                                    <small>
+                                      {
+                                        document.description
+                                      }
+                                    </small>
+                                  )}
+                                </div>
+
+                                <span
+                                  className={documentStatusClass(
+                                    document.status
+                                  )}
+                                >
+                                  {prettyValue(
+                                    document.status
+                                  )}
+                                </span>
+
+                                <div className="document-actions">
+                                  {document.file_url && (
+                                    <a
+                                      className="document-link"
+                                      href={
+                                        document.file_url
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Open
+                                    </a>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    className="document-action-button"
+                                    disabled={
+                                      !canManageEmployees &&
+                                      currentRole !==
+                                        'MANAGER'
+                                    }
+                                    onClick={() =>
+                                      openEditDocument(
+                                        document
+                                      )
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="document-action-button danger-document"
+                                    disabled={
+                                      !canManageEmployees &&
+                                      currentRole !==
+                                        'MANAGER'
+                                    }
+                                    onClick={() =>
+                                      deleteEmployeeDocument(
+                                        document
+                                      )
+                                    }
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="feature-grid">
+                      <div className="profile-section">
+                        <div className="feature-section-header">
+                          <div>
+                            <h3>
+                              Attendance Summary
+                            </h3>
+
+                            <p>
+                              Current employee
+                              attendance overview.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="text-link-button"
+                            onClick={() =>
+                              navigateTo(
+                                '/attendance'
+                              )
+                            }
+                          >
+                            Detailed Attendance
+                            <Icon
+                              name="arrow"
+                              size={13}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="metric-grid">
+                          <div>
+                            <span>
+                              Present
+                            </span>
+
+                            <strong>
+                              {profile?.attendance?.present ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Absent
+                            </span>
+
+                            <strong>
+                              {profile?.attendance?.absent ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Excused / Leave
+                            </span>
+
+                            <strong>
+                              {profile?.attendance?.excused ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Worked Hours
+                            </span>
+
+                            <strong>
+                              {Math.round(
+                                (profile?.attendance
+                                  ?.workedMinutes ??
+                                  0) / 60
+                              )}
+                              h
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <div className="feature-section-header">
+                          <div>
+                            <h3>
+                              Leave Summary
+                            </h3>
+
+                            <p>
+                              Leave balance and
+                              request status.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="text-link-button"
+                            onClick={() =>
+                              navigateTo(
+                                '/leave'
+                              )
+                            }
+                          >
+                            My Leave
+                            <Icon
+                              name="arrow"
+                              size={13}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="metric-grid">
+                          <div>
+                            <span>
+                              Leave Balance
+                            </span>
+
+                            <strong>
+                              {profile?.leave?.approvedDays ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Pending
+                            </span>
+
+                            <strong>
+                              {profile?.leave?.pending ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Approved
+                            </span>
+
+                            <strong>
+                              {profile?.leave?.approved ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Rejected
+                            </span>
+
+                            <strong>
+                              {profile?.leave?.rejected ??
+                                0}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <div className="feature-section-header">
+                          <div>
+                            <h3>
+                              Payroll Summary
+                            </h3>
+
+                            <p>
+                              Salary structure and
+                              latest payroll.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="text-link-button"
+                            onClick={() =>
+                              navigateTo(
+                                '/payroll'
+                              )
+                            }
+                          >
+                            Payroll
+                            <Icon
+                              name="arrow"
+                              size={13}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="salary-grid">
+                          <div>
+                            <span>
+                              Basic Salary
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                profile?.payroll
+                                  ?.basicSalary
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              HRA
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                profile?.payroll
+                                  ?.hra
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Allowances
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                profile?.payroll
+                                  ?.allowances
+                              )}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Deductions
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                profile?.payroll
+                                  ?.deductions ??
+                                  profile?.payroll
+                                    ?.totalDeductions
+                              )}
+                            </strong>
+                          </div>
+
+                          <div className="salary-net">
+                            <span>
+                              Net Salary
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                profile?.payroll
+                                  ?.netSalary
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="profile-section">
+                        <div className="feature-section-header">
+                          <div>
+                            <h3>
+                              Performance
+                            </h3>
+
+                            <p>
+                              Goals and performance
+                              reviews.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="text-link-button"
+                            onClick={() =>
+                              navigateTo(
+                                '/performance'
+                              )
+                            }
+                          >
+                            Performance
+                            <Icon
+                              name="arrow"
+                              size={13}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="metric-grid">
+                          <div>
+                            <span>
+                              Total Goals
+                            </span>
+
+                            <strong>
+                              {profile?.performance
+                                ?.totalGoals ??
+                                0}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Completed
+                            </span>
+
+                            <strong>
+                              —
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              In Progress
+                            </span>
+
+                            <strong>
+                              —
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>
+                              Average Rating
+                            </span>
+
+                            <strong>
+                              {profile?.performance
+                                ?.averageRating ??
+                                '—'}{' '}
+                              / 5
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="profile-section account-controls-section">
+                      <div className="feature-section-header">
+                        <div>
+                          <h3>
+                            Employee Account Controls
+                          </h3>
+
+                          <p>
+                            Account access controls
+                            available to HR and
+                            administrators.
+                          </p>
+                        </div>
+
+                        <span className="permission-badge">
+                          <Icon
+                            name="shield"
+                            size={13}
+                          />
+
+                          {canManageEmployees
+                            ? 'HR/Admin access'
+                            : 'View only'}
                         </span>
+                      </div>
+
+                      <div className="account-control-grid">
+                        <div className="control-card">
+                          <Icon
+                            name="unlock"
+                            size={17}
+                          />
+
+                          <div>
+                            <strong>
+                              {selectedEmployee.is_active
+                                ? 'Account Active'
+                                : 'Account Inactive'}
+                            </strong>
+
+                            <span>
+                              Activate or deactivate
+                              through employee
+                              status.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={
+                              !canManageEmployees
+                            }
+                            onClick={() =>
+                              openStatusManager(
+                                selectedEmployee
+                              )
+                            }
+                          >
+                            Change
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon
+                            name="key"
+                            size={17}
+                          />
+
+                          <div>
+                            <strong>
+                              Reset Password
+                            </strong>
+
+                            <span>
+                              Use the account
+                              security controls
+                              in Settings.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={
+                              !canManageEmployees
+                            }
+                            onClick={() =>
+                              navigateTo(
+                                '/settings'
+                              )
+                            }
+                          >
+                            Open
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon
+                            name="shield"
+                            size={17}
+                          />
+
+                          <div>
+                            <strong>
+                              Role
+                            </strong>
+
+                            <span>
+                              {prettyValue(
+                                selectedEmployee.role
+                              )}{' '}
+                              · role changes are
+                              HR/Admin only.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={
+                              !canManageEmployees
+                            }
+                            onClick={() =>
+                              setShowEdit(false)
+                            }
+                          >
+                            Edit
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon
+                            name={
+                              selectedEmployee.is_active
+                                ? 'unlock'
+                                : 'lock'
+                            }
+                            size={17}
+                          />
+
+                          <div>
+                            <strong>
+                              {selectedEmployee.is_active
+                                ? 'Unlock / Disable'
+                                : 'Unlock Account'}
+                            </strong>
+
+                            <span>
+                              Account state follows
+                              the employee status.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={
+                              !canManageEmployees
+                            }
+                            onClick={() =>
+                              openStatusManager(
+                                selectedEmployee
+                              )
+                            }
+                          >
+                            Manage
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="last-login">
+                        <Icon
+                          name="clock"
+                          size={15}
+                        />
+
+                        Last login:{' '}
+                        <strong>
+                          Not available from
+                          current employee
+                          profile API
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="profile-section self-service-section">
+                      <div className="feature-section-header">
+                        <div>
+                          <h3>
+                            Employee Self-Service
+                          </h3>
+
+                          <p>
+                            Permitted employee-facing
+                            areas.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="self-service-grid">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigateTo(
+                              '/employees'
+                            )
+                          }
+                        >
+                          <span>
+                            My Profile
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigateTo(
+                              '/attendance'
+                            )
+                          }
+                        >
+                          <span>
+                            My Attendance
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigateTo(
+                              '/leave'
+                            )
+                          }
+                        >
+                          <span>
+                            My Leave
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigateTo(
+                              '/payroll'
+                            )
+                          }
+                        >
+                          <span>
+                            My Payroll
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigateTo(
+                              '/performance'
+                            )
+                          }
+                        >
+                          <span>
+                            My Goals & Reviews
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowDocumentForm(
+                              false
+                            )
+                          }
+                        >
+                          <span>
+                            My Documents
+                          </span>
+
+                          <Icon
+                            name="arrow"
+                            size={14}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="permission-note">
+                        Sensitive fields such as
+                        salary, role, department,
+                        employee status and manager
+                        remain restricted to authorized
+                        HR/Admin workflows.
                       </div>
                     </div>
 
@@ -4681,6 +6200,250 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
+
+      {/* ================================================================ */}
+      {/* DOCUMENT ADD / EDIT MODAL */}
+      {/* ================================================================ */}
+      {showDocumentForm &&
+        selectedEmployee && (
+          <div
+            className="modal-backdrop document-modal-backdrop"
+            onMouseDown={() =>
+              setShowDocumentForm(false)
+            }
+          >
+            <div
+              className="modal document-form-modal"
+              onMouseDown={(event) =>
+                event.stopPropagation()
+              }
+            >
+              <div className="modal-header">
+                <div>
+                  <h2>
+                    {editingDocument
+                      ? 'Edit Document'
+                      : 'Add Employee Document'}
+                  </h2>
+
+                  <p>
+                    {selectedEmployee.first_name}{' '}
+                    {
+                      selectedEmployee.last_name
+                    }{' '}
+                    ·{' '}
+                    {
+                      selectedEmployee.employee_code
+                    }
+                  </p>
+                </div>
+
+                <button
+                  className="close-button"
+                  onClick={() =>
+                    setShowDocumentForm(
+                      false
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+
+              {documentsError && (
+                <div className="error-box">
+                  {documentsError}
+                </div>
+              )}
+
+              <form
+                className="form"
+                onSubmit={
+                  saveEmployeeDocument
+                }
+              >
+                <div className="form-section">
+                  <h3>
+                    Document Information
+                  </h3>
+
+                  <div className="form-grid">
+                    <label>
+                      Document Name *
+                      <input
+                        required
+                        value={
+                          documentForm.documentName
+                        }
+                        onChange={(event) =>
+                          setDocumentForm(
+                            (current) => ({
+                              ...current,
+                              documentName:
+                                event.target.value,
+                            })
+                          )
+                        }
+                        placeholder="e.g. Aadhaar Card"
+                      />
+                    </label>
+
+                    <label>
+                      Document Type *
+                      <select
+                        required
+                        value={
+                          documentForm.documentType
+                        }
+                        onChange={(event) =>
+                          setDocumentForm(
+                            (current) => ({
+                              ...current,
+                              documentType:
+                                event.target.value,
+                            })
+                          )
+                        }
+                      >
+                        {DOCUMENT_TYPES.map(
+                          (type) => (
+                            <option
+                              key={type}
+                              value={type}
+                            >
+                              {prettyValue(
+                                type
+                              )}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="full">
+                      File URL / Document Link *
+                      <input
+                        required
+                        type="url"
+                        value={
+                          documentForm.fileUrl
+                        }
+                        onChange={(event) =>
+                          setDocumentForm(
+                            (current) => ({
+                              ...current,
+                              fileUrl:
+                                event.target.value,
+                            })
+                          )
+                        }
+                        placeholder="https://example.com/document.pdf"
+                      />
+
+                      <small className="field-help">
+                        Enter the accessible URL of
+                        the document. The current
+                        backend stores the document
+                        link.
+                      </small>
+                    </label>
+
+                    <label>
+                      Status
+                      <select
+                        value={
+                          documentForm.status
+                        }
+                        onChange={(event) =>
+                          setDocumentForm(
+                            (current) => ({
+                              ...current,
+                              status:
+                                event.target.value,
+                            })
+                          )
+                        }
+                      >
+                        {DOCUMENT_STATUSES.map(
+                          (status) => (
+                            <option
+                              key={status}
+                              value={status}
+                            >
+                              {prettyValue(
+                                status
+                              )}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="full">
+                      Description
+                      <textarea
+                        value={
+                          documentForm.description
+                        }
+                        onChange={(event) =>
+                          setDocumentForm(
+                            (current) => ({
+                              ...current,
+                              description:
+                                event.target.value,
+                            })
+                          )
+                        }
+                        placeholder="Optional notes about this document..."
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="document-form-note">
+                  <Icon
+                    name="shield"
+                    size={15}
+                  />
+
+                  <span>
+                    Upload date and uploaded-by
+                    information are recorded by
+                    the backend automatically.
+                  </span>
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setShowDocumentForm(
+                        false
+                      )
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={
+                      documentSaving
+                    }
+                  >
+                    {documentSaving
+                      ? 'Saving...'
+                      : editingDocument
+                      ? 'Update Document'
+                      : 'Add Document'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       <style jsx>{`
         .page {
@@ -5010,17 +6773,20 @@ export default function EmployeesPage() {
           background: #ffffff;
           border-radius: 9px;
           color: #475569;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          box-shadow: 0 1px 2px
+            rgba(15, 23, 42, 0.04);
           transition: all 0.18s ease;
         }
 
         .row-action-button:hover {
           transform: translateY(-1px);
-          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.10);
+          box-shadow: 0 4px 10px
+            rgba(15, 23, 42, 0.1);
         }
 
         .row-action-button:focus-visible {
-          outline: 3px solid rgba(37, 99, 235, 0.16);
+          outline: 3px solid
+            rgba(37, 99, 235, 0.16);
           outline-offset: 1px;
         }
 
@@ -5165,6 +6931,10 @@ export default function EmployeesPage() {
           padding: 20px;
         }
 
+        .document-modal-backdrop {
+          z-index: 1100;
+        }
+
         .modal {
           width: min(620px, 100%);
           max-height: 92vh;
@@ -5185,6 +6955,10 @@ export default function EmployeesPage() {
 
         .status-modal {
           width: min(620px, 100%);
+        }
+
+        .document-form-modal {
+          width: min(720px, 100%);
         }
 
         .modal-header {
@@ -5686,93 +7460,880 @@ export default function EmployeesPage() {
           font-size: 11px;
         }
 
+        .required-mark {
+          color: #dc2626;
+          margin-left: 2px;
+          font-weight: 700;
+        }
 
-        /* DARK MODE OVERRIDES FOR EMPLOYEE MANAGEMENT */
-        :global(.hrms-dark-mode) .page { color: #e5e7eb; }
-        :global(.hrms-dark-mode) .page-header h2 { color: #f8fafc; }
-        :global(.hrms-dark-mode) .page-header p { color: #94a3b8; }
-        :global(.hrms-dark-mode) .secondary-button { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
-        :global(.hrms-dark-mode) .clear-button { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-        :global(.hrms-dark-mode) .refresh-button { background: #172033; color: #60a5fa; border: 1px solid #334155; }
+        .role-context {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 8px;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-size: 11px;
+        }
+
+        .profile-feature-section {
+          width: 100%;
+        }
+
+        .feature-section-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 14px;
+        }
+
+        .feature-section-header h3 {
+          margin-bottom: 4px;
+        }
+
+        .feature-section-header p {
+          margin: 0;
+          color: #94a3b8;
+          font-size: 11px;
+        }
+
+        .small-button {
+          padding: 8px 11px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .document-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .documents-table {
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .document-row {
+          display: grid;
+          grid-template-columns:
+            34px
+            minmax(0, 1fr)
+            auto
+            auto;
+          align-items: center;
+          gap: 10px;
+          padding: 11px 12px;
+          border-bottom: 1px solid #edf0f4;
+        }
+
+        .document-row:last-child {
+          border-bottom: 0;
+        }
+
+        .document-icon {
+          width: 32px;
+          height: 32px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          background: #eff6ff;
+          color: #2563eb;
+        }
+
+        .document-main {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .document-main strong {
+          color: #334155;
+          font-size: 12px;
+          word-break: break-word;
+        }
+
+        .document-main span {
+          color: #94a3b8;
+          font-size: 10px;
+        }
+
+        .document-main small {
+          color: #64748b;
+          font-size: 10px;
+          word-break: break-word;
+        }
+
+        .document-status {
+          padding: 5px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .document-status-pending {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .document-status-approved,
+        .document-status-active {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .document-status-rejected {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+
+        .document-status-expired {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .document-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 5px;
+          flex-wrap: wrap;
+        }
+
+        .document-link,
+        .text-link-button {
+          border: 0;
+          background: transparent;
+          color: #2563eb;
+          font-size: 11px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          text-decoration: none;
+        }
+
+        .document-action-button {
+          border: 1px solid #dbe2ea;
+          background: white;
+          color: #334155;
+          border-radius: 6px;
+          padding: 6px 8px;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .danger-document {
+          color: #dc2626;
+        }
+
+        .documents-empty {
+          padding: 35px 20px;
+          border: 1px dashed #cbd5e1;
+          border-radius: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          text-align: center;
+          background: #f8fafc;
+        }
+
+        .documents-empty-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 12px;
+          display: grid;
+          place-items: center;
+          background: #eff6ff;
+          color: #2563eb;
+          margin-bottom: 4px;
+        }
+
+        .documents-empty strong {
+          color: #334155;
+          font-size: 13px;
+        }
+
+        .documents-empty span {
+          color: #94a3b8;
+          font-size: 11px;
+          max-width: 460px;
+          line-height: 1.5;
+          margin-bottom: 7px;
+        }
+
+        .document-loading {
+          padding: 28px;
+        }
+
+        .document-message {
+          margin: 0 0 12px;
+        }
+
+        .field-help {
+          color: #94a3b8;
+          font-size: 10px;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+
+        .document-form-note {
+          margin: 0 20px;
+          padding: 11px 12px;
+          border-radius: 8px;
+          background: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #bfdbfe;
+          display: flex;
+          align-items: flex-start;
+          gap: 7px;
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .feature-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
+
+        .metric-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            4,
+            1fr
+          );
+          gap: 8px;
+        }
+
+        .metric-grid > div,
+        .salary-grid > div {
+          padding: 10px;
+          border-radius: 8px;
+          background: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .metric-grid span,
+        .salary-grid span {
+          color: #94a3b8;
+          font-size: 9px;
+          text-transform: uppercase;
+        }
+
+        .metric-grid strong,
+        .salary-grid strong {
+          color: #172033;
+          font-size: 15px;
+        }
+
+        .salary-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            2,
+            1fr
+          );
+          gap: 8px;
+        }
+
+        .salary-grid .salary-net {
+          grid-column: 1 / -1;
+          background: #eff6ff;
+        }
+
+        .salary-grid .salary-net strong {
+          color: #1d4ed8;
+        }
+
+        .account-controls-section {
+          width: 100%;
+        }
+
+        .permission-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 6px 9px;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-size: 10px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .account-control-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            2,
+            1fr
+          );
+          gap: 9px;
+        }
+
+        .control-card {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 11px;
+          border: 1px solid #e2e8f0;
+          border-radius: 9px;
+        }
+
+        .control-card > svg {
+          color: #2563eb;
+          flex: 0 0 auto;
+        }
+
+        .control-card > div {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .control-card strong {
+          color: #334155;
+          font-size: 11px;
+        }
+
+        .control-card span {
+          color: #94a3b8;
+          font-size: 9px;
+          line-height: 1.35;
+        }
+
+        .control-card button {
+          border: 1px solid #dbe2ea;
+          background: white;
+          color: #334155;
+          border-radius: 6px;
+          padding: 6px 8px;
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .control-card button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .last-login {
+          margin-top: 10px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          color: #94a3b8;
+          font-size: 10px;
+        }
+
+        .last-login strong {
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .self-service-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            3,
+            1fr
+          );
+          gap: 8px;
+        }
+
+        .self-service-grid button {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 11px;
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 8px;
+          color: #334155;
+          font-size: 11px;
+          font-weight: 700;
+          text-align: left;
+        }
+
+        .self-service-grid button:hover {
+          border-color: #93c5fd;
+          background: #eff6ff;
+        }
+
+        .permission-note {
+          margin-top: 10px;
+          padding: 9px 10px;
+          border-radius: 8px;
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 10px;
+        }
+
+        /* DARK MODE */
+        :global(.hrms-dark-mode) .page {
+          color: #e5e7eb;
+        }
+
+        :global(.hrms-dark-mode) .required-mark {
+          color: #f87171;
+        }
+
+        :global(.hrms-dark-mode) .page-header h2 {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .page-header p {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .secondary-button {
+          background: #1e293b;
+          color: #e2e8f0;
+          border: 1px solid #334155;
+        }
+
+        :global(.hrms-dark-mode) .clear-button {
+          background: #1e293b;
+          color: #cbd5e1;
+          border: 1px solid #334155;
+        }
+
+        :global(.hrms-dark-mode) .refresh-button {
+          background: #172033;
+          color: #60a5fa;
+          border: 1px solid #334155;
+        }
+
         :global(.hrms-dark-mode) .stat-card,
         :global(.hrms-dark-mode) .card,
-        :global(.hrms-dark-mode) .modal { background: #111827; border-color: #273449; }
-        :global(.hrms-dark-mode) .stat-card span { color: #94a3b8; }
-        :global(.hrms-dark-mode) .stat-card strong { color: #f8fafc; }
-        :global(.hrms-dark-mode) .stat-icon { background: #172554; color: #60a5fa; }
-        :global(.hrms-dark-mode) .active-icon { background: #052e1a; color: #4ade80; }
-        :global(.hrms-dark-mode) .leave-icon { background: #3b2507; color: #fbbf24; }
-        :global(.hrms-dark-mode) .dept-icon { background: #24164f; color: #a78bfa; }
+        :global(.hrms-dark-mode) .modal {
+          background: #111827;
+          border-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .stat-card span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .stat-card strong {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .stat-icon {
+          background: #172554;
+          color: #60a5fa;
+        }
+
+        :global(.hrms-dark-mode) .active-icon {
+          background: #052e1a;
+          color: #4ade80;
+        }
+
+        :global(.hrms-dark-mode) .leave-icon {
+          background: #3b2507;
+          color: #fbbf24;
+        }
+
+        :global(.hrms-dark-mode) .dept-icon {
+          background: #24164f;
+          color: #a78bfa;
+        }
+
         :global(.hrms-dark-mode) .field label,
-        :global(.hrms-dark-mode) .form label { color: #cbd5e1; }
+        :global(.hrms-dark-mode) .form label {
+          color: #cbd5e1;
+        }
+
         :global(.hrms-dark-mode) input,
         :global(.hrms-dark-mode) select,
-        :global(.hrms-dark-mode) textarea { background: #0f172a; color: #f1f5f9; border-color: #334155; }
+        :global(.hrms-dark-mode) textarea {
+          background: #0f172a;
+          color: #f1f5f9;
+          border-color: #334155;
+        }
+
         :global(.hrms-dark-mode) input::placeholder,
-        :global(.hrms-dark-mode) textarea::placeholder { color: #64748b; }
-        :global(.hrms-dark-mode) select option { background: #0f172a; color: #f1f5f9; }
-        :global(.hrms-dark-mode) .section-header { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) textarea::placeholder {
+          color: #64748b;
+        }
+
+        :global(.hrms-dark-mode) select option {
+          background: #0f172a;
+          color: #f1f5f9;
+        }
+
+        :global(.hrms-dark-mode) .section-header {
+          border-bottom-color: #273449;
+        }
+
         :global(.hrms-dark-mode) .section-header h3,
-        :global(.hrms-dark-mode) .management-list-header h3 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .management-list-header h3 {
+          color: #f8fafc;
+        }
+
         :global(.hrms-dark-mode) .section-header span,
-        :global(.hrms-dark-mode) .management-list-header span { color: #94a3b8; }
-        :global(.hrms-dark-mode) th { background: #0f172a; color: #94a3b8; }
-        :global(.hrms-dark-mode) td { color: #cbd5e1; border-top-color: #273449; }
-        :global(.hrms-dark-mode) tbody tr:hover { background: #172033; }
-        :global(.hrms-dark-mode) .employee-link strong { color: #f8fafc; }
-        :global(.hrms-dark-mode) .employee-link span { color: #94a3b8; }
-        :global(.hrms-dark-mode) .employee-avatar { background: #1e3a8a; color: #bfdbfe; }
-        :global(.hrms-dark-mode) .row-action-button { background: #0f172a; border-color: #334155; color: #cbd5e1; }
-        :global(.hrms-dark-mode) .view-action:hover { background: #172554; border-color: #3b82f6; }
-        :global(.hrms-dark-mode) .edit-action:hover { background: #2e1065; border-color: #8b5cf6; }
-        :global(.hrms-dark-mode) .status-action:hover { background: #451a03; border-color: #d97706; }
-        :global(.hrms-dark-mode) .pagination { border-top-color: #273449; color: #94a3b8; }
-        :global(.hrms-dark-mode) .pagination-controls button { background: #0f172a; color: #e2e8f0; border-color: #334155; }
-        :global(.hrms-dark-mode) .modal-header { border-bottom-color: #273449; }
+        :global(.hrms-dark-mode) .management-list-header span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) th {
+          background: #0f172a;
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) td {
+          color: #cbd5e1;
+          border-top-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) tbody tr:hover {
+          background: #172033;
+        }
+
+        :global(.hrms-dark-mode) .employee-link strong {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .employee-link span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .employee-avatar {
+          background: #1e3a8a;
+          color: #bfdbfe;
+        }
+
+        :global(.hrms-dark-mode) .row-action-button {
+          background: #0f172a;
+          border-color: #334155;
+          color: #cbd5e1;
+        }
+
+        :global(.hrms-dark-mode) .view-action:hover {
+          background: #172554;
+          border-color: #3b82f6;
+        }
+
+        :global(.hrms-dark-mode) .edit-action:hover {
+          background: #2e1065;
+          border-color: #8b5cf6;
+        }
+
+        :global(.hrms-dark-mode) .status-action:hover {
+          background: #451a03;
+          border-color: #d97706;
+        }
+
+        :global(.hrms-dark-mode) .pagination {
+          border-top-color: #273449;
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .pagination-controls button {
+          background: #0f172a;
+          color: #e2e8f0;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .modal-header {
+          border-bottom-color: #273449;
+        }
+
         :global(.hrms-dark-mode) .modal-header h2,
         :global(.hrms-dark-mode) .form-section h3,
-        :global(.hrms-dark-mode) .management-form h3 { color: #f8fafc; }
-        :global(.hrms-dark-mode) .modal-header p { color: #94a3b8; }
-        :global(.hrms-dark-mode) .close-button { background: #1e293b; color: #cbd5e1; }
-        :global(.hrms-dark-mode) .modal-footer { border-top-color: #273449; }
-        :global(.hrms-dark-mode) .management-form { background: #0f172a; border-right-color: #273449; }
-        :global(.hrms-dark-mode) .management-list { background: #111827; }
-        :global(.hrms-dark-mode) .management-table { border-color: #334155; }
-        :global(.hrms-dark-mode) .management-row { border-bottom-color: #273449; }
-        :global(.hrms-dark-mode) .management-main strong { color: #f8fafc; }
-        :global(.hrms-dark-mode) .management-main span { color: #94a3b8; }
-        :global(.hrms-dark-mode) .count-badge { background: #172554; color: #93c5fd; }
-        :global(.hrms-dark-mode) .management-actions button { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+        :global(.hrms-dark-mode) .management-form h3 {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .modal-header p {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .close-button {
+          background: #1e293b;
+          color: #cbd5e1;
+        }
+
+        :global(.hrms-dark-mode) .modal-footer {
+          border-top-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .management-form {
+          background: #0f172a;
+          border-right-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .management-list {
+          background: #111827;
+        }
+
+        :global(.hrms-dark-mode) .management-table {
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .management-row {
+          border-bottom-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .management-main strong {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .management-main span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .count-badge {
+          background: #172554;
+          color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .management-actions button {
+          background: #0f172a;
+          color: #cbd5e1;
+          border-color: #334155;
+        }
+
         :global(.hrms-dark-mode) .assignment-box,
         :global(.hrms-dark-mode) .selected-employee,
         :global(.hrms-dark-mode) .status-note,
         :global(.hrms-dark-mode) .summary-card,
-        :global(.hrms-dark-mode) .profile-hero { background: #0f172a; }
-        :global(.hrms-dark-mode) .assignment-box { border-color: #334155; }
-        :global(.hrms-dark-mode) .assignment-box h3 { color: #f8fafc; }
+        :global(.hrms-dark-mode) .profile-hero {
+          background: #0f172a;
+        }
+
+        :global(.hrms-dark-mode) .assignment-box {
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .assignment-box h3 {
+          color: #f8fafc;
+        }
+
         :global(.hrms-dark-mode) .selected-employee span,
         :global(.hrms-dark-mode) .assignment-box small,
         :global(.hrms-dark-mode) .status-note,
         :global(.hrms-dark-mode) .summary-card span,
         :global(.hrms-dark-mode) .summary-card small,
-        :global(.hrms-dark-mode) .profile-title p { color: #94a3b8; }
+        :global(.hrms-dark-mode) .profile-title p {
+          color: #94a3b8;
+        }
+
         :global(.hrms-dark-mode) .status-option,
-        :global(.hrms-dark-mode) .status-employee-list button { background: #0f172a; border-color: #334155; color: #e2e8f0; }
-        :global(.hrms-dark-mode) .status-option.selected { background: #172554; border-color: #3b82f6; }
+        :global(.hrms-dark-mode) .status-employee-list button {
+          background: #0f172a;
+          border-color: #334155;
+          color: #e2e8f0;
+        }
+
+        :global(.hrms-dark-mode) .status-option.selected {
+          background: #172554;
+          border-color: #3b82f6;
+        }
+
         :global(.hrms-dark-mode) .profile-title h2,
         :global(.hrms-dark-mode) .profile-section h3,
-        :global(.hrms-dark-mode) .summary-card strong { color: #f8fafc; }
-        :global(.hrms-dark-mode) .profile-section { border-color: #334155; }
-        :global(.hrms-dark-mode) .detail-grid strong { color: #e2e8f0; }
+        :global(.hrms-dark-mode) .summary-card strong {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .profile-section {
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .detail-grid strong {
+          color: #e2e8f0;
+        }
+
         :global(.hrms-dark-mode) .detail-grid span,
-        :global(.hrms-dark-mode) .manager-card span { color: #94a3b8; }
-        :global(.hrms-dark-mode) .activity-item { border-bottom-color: #273449; }
-        :global(.hrms-dark-mode) .activity-item strong { color: #e2e8f0; }
+        :global(.hrms-dark-mode) .manager-card span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .activity-item {
+          border-bottom-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .activity-item strong {
+          color: #e2e8f0;
+        }
+
         :global(.hrms-dark-mode) .activity-item span,
-        :global(.hrms-dark-mode) .activity-item small { color: #94a3b8; }
-        :global(.hrms-dark-mode) .error-box { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
-        :global(.hrms-dark-mode) .success-box { background: #052e1a; color: #86efac; border-color: #166534; }
-        :global(.hrms-dark-mode) .info-box { background: #172554; color: #bfdbfe; border-color: #1d4ed8; }
+        :global(.hrms-dark-mode) .activity-item small {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .error-box {
+          background: #450a0a;
+          color: #fca5a5;
+          border-color: #7f1d1d;
+        }
+
+        :global(.hrms-dark-mode) .success-box {
+          background: #052e1a;
+          color: #86efac;
+          border-color: #166534;
+        }
+
+        :global(.hrms-dark-mode) .info-box {
+          background: #172554;
+          color: #bfdbfe;
+          border-color: #1d4ed8;
+        }
+
+        :global(.hrms-dark-mode) .role-context {
+          background: #172554;
+          color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .feature-section-header p {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .documents-table {
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .document-row {
+          border-bottom-color: #273449;
+        }
+
+        :global(.hrms-dark-mode) .document-icon {
+          background: #172554;
+          color: #60a5fa;
+        }
+
+        :global(.hrms-dark-mode) .document-main strong {
+          color: #e2e8f0;
+        }
+
+        :global(.hrms-dark-mode) .document-main small {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .document-status-pending {
+          background: #451a03;
+          color: #fbbf24;
+        }
+
+        :global(.hrms-dark-mode) .document-status-approved,
+        :global(.hrms-dark-mode) .document-status-active {
+          background: #052e1a;
+          color: #4ade80;
+        }
+
+        :global(.hrms-dark-mode) .document-status-rejected {
+          background: #450a0a;
+          color: #fca5a5;
+        }
+
+        :global(.hrms-dark-mode) .document-status-expired {
+          background: #1e293b;
+          color: #cbd5e1;
+        }
+
+        :global(.hrms-dark-mode) .document-action-button {
+          background: #111827;
+          color: #cbd5e1;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .documents-empty {
+          background: #0f172a;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .documents-empty-icon {
+          background: #172554;
+          color: #60a5fa;
+        }
+
+        :global(.hrms-dark-mode) .documents-empty strong {
+          color: #e2e8f0;
+        }
+
+        :global(.hrms-dark-mode) .documents-empty span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .document-form-note {
+          background: #172554;
+          color: #bfdbfe;
+          border-color: #1d4ed8;
+        }
+
+        :global(.hrms-dark-mode) .field-help {
+          color: #64748b;
+        }
+
+        :global(.hrms-dark-mode) .metric-grid > div,
+        :global(.hrms-dark-mode) .salary-grid > div,
+        :global(.hrms-dark-mode) .permission-note {
+          background: #0f172a;
+        }
+
+        :global(.hrms-dark-mode) .metric-grid strong,
+        :global(.hrms-dark-mode) .salary-grid strong {
+          color: #f8fafc;
+        }
+
+        :global(.hrms-dark-mode) .salary-grid .salary-net {
+          background: #172554;
+        }
+
+        :global(.hrms-dark-mode) .salary-grid .salary-net strong {
+          color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .permission-badge {
+          background: #172554;
+          color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .control-card,
+        :global(.hrms-dark-mode) .self-service-grid button {
+          background: #0f172a;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .control-card strong,
+        :global(.hrms-dark-mode) .self-service-grid button {
+          color: #e2e8f0;
+        }
+
+        :global(.hrms-dark-mode) .control-card button {
+          background: #111827;
+          color: #cbd5e1;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .last-login strong {
+          color: #cbd5e1;
+        }
+
+        :global(.hrms-dark-mode) .self-service-grid button:hover {
+          background: #172554;
+          border-color: #3b82f6;
+        }
+
+        :global(.hrms-dark-mode) .permission-note {
+          color: #94a3b8;
+        }
 
         @media (max-width: 1200px) {
           .filters-grid {
@@ -5812,6 +8373,14 @@ export default function EmployeesPage() {
           .profile-grid {
             grid-template-columns: 1fr;
           }
+
+          .feature-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .account-control-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 700px) {
@@ -5847,8 +8416,42 @@ export default function EmployeesPage() {
           .profile-hero {
             flex-wrap: wrap;
           }
+
+          .feature-section-header {
+            flex-direction: column;
+          }
+
+          .document-header-actions {
+            width: 100%;
+            justify-content: flex-start;
+          }
+
+          .metric-grid,
+          .self-service-grid {
+            grid-template-columns: repeat(
+              2,
+              1fr
+            );
+          }
+
+          .document-row {
+            grid-template-columns:
+              34px
+              1fr
+              auto;
+          }
+
+          .document-status {
+            grid-column: 2;
+            justify-self: start;
+          }
+
+          .document-actions {
+            grid-column: 2 / -1;
+            justify-content: flex-start;
+          }
         }
       `}</style>
     </HRMSLayout>
   );
-  }
+}
