@@ -284,7 +284,23 @@ type ProfileData = {
     role?: string;
     designation?: string;
   };
+  activityHistory?: ProfileActivity[];
   activity?: any[];
+};
+
+type ProfileActivity = {
+  id: number | string;
+  user_id?: number | string | null;
+  action?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | string | null;
+  details?: string | Record<string, unknown> | null;
+  ip_address?: string | null;
+  created_at?: string | null;
+  actor_first_name?: string | null;
+  actor_last_name?: string | null;
+  actor_email?: string | null;
+  actor_role?: string | null;
 };
 
 type EmployeeDocument = {
@@ -842,6 +858,26 @@ export default function EmployeesPage() {
     statusError,
     setStatusError,
   ] = useState('');
+
+  /*
+  |--------------------------------------------------------------------------
+  | ACCOUNT CONTROLS
+  |--------------------------------------------------------------------------
+  */
+  const [showAccountControls, setShowAccountControls] =
+    useState(false);
+
+  const [accountAction, setAccountAction] = useState<
+    'password' | 'role'
+  >('password');
+
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountPasswordConfirm, setAccountPasswordConfirm] =
+    useState('');
+  const [accountRole, setAccountRole] = useState('EMPLOYEE');
+  const [accountSaving, setAccountSaving] = useState(false);
+  const [accountError, setAccountError] = useState('');
+  const [accountSuccess, setAccountSuccess] = useState('');
 
   /*
   |--------------------------------------------------------------------------
@@ -1883,6 +1919,109 @@ async function openProfile(
       );
     } finally {
       setStatusSaving(false);
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ACCOUNT CONTROLS
+  |--------------------------------------------------------------------------
+  */
+  function openAccountControls(
+    employee: Employee,
+    action: 'password' | 'role'
+  ) {
+    setAccountAction(action);
+    setAccountPassword('');
+    setAccountPasswordConfirm('');
+    setAccountRole(employee.role || 'EMPLOYEE');
+    setAccountError('');
+    setAccountSuccess('');
+    setShowAccountControls(true);
+  }
+
+  async function refreshSelectedEmployeeProfile() {
+    if (!selectedEmployee) return;
+
+    const response = await apiRequest(
+      `${API}/employees/${selectedEmployee.id}/profile`
+    );
+
+    const nextProfile =
+      response.data || response;
+
+    setProfile(nextProfile);
+
+    if (nextProfile.employee) {
+      setSelectedEmployee(nextProfile.employee);
+    }
+  }
+
+  async function saveAccountControl() {
+    if (!selectedEmployee) return;
+
+    setAccountSaving(true);
+    setAccountError('');
+    setAccountSuccess('');
+
+    try {
+      if (accountAction === 'password') {
+        if (accountPassword.length < 8) {
+          throw new Error(
+            'Password must be at least 8 characters long.'
+          );
+        }
+
+        if (accountPassword !== accountPasswordConfirm) {
+          throw new Error(
+            'New password and confirmation password do not match.'
+          );
+        }
+
+        await apiRequest(
+          `${API}/employee-management/employees/${selectedEmployee.id}/reset-password`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              password: accountPassword,
+            }),
+          }
+        );
+
+        setAccountSuccess(
+          'Employee password reset successfully.'
+        );
+      } else {
+        await apiRequest(
+          `${API}/employee-management/employees/${selectedEmployee.id}/account-role`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({
+              role: accountRole,
+            }),
+          }
+        );
+
+        setAccountSuccess(
+          'Employee account role updated successfully.'
+        );
+      }
+
+      await loadEmployees();
+      await refreshSelectedEmployeeProfile();
+
+      setTimeout(() => {
+        setShowAccountControls(false);
+        setAccountSuccess('');
+      }, 900);
+    } catch (err) {
+      setAccountError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to update account controls.'
+      );
+    } finally {
+      setAccountSaving(false);
     }
   }
 
@@ -5855,107 +5994,6 @@ async function openProfile(
                       <div className="account-control-grid">
                         <div className="control-card">
                           <Icon
-                            name="unlock"
-                            size={17}
-                          />
-
-                          <div>
-                            <strong>
-                              {selectedEmployee.is_active
-                                ? 'Account Active'
-                                : 'Account Inactive'}
-                            </strong>
-
-                            <span>
-                              Activate or deactivate
-                              through employee
-                              status.
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={
-                              !canManageEmployees
-                            }
-                            onClick={() =>
-                              openStatusManager(
-                                selectedEmployee
-                              )
-                            }
-                          >
-                            Change
-                          </button>
-                        </div>
-
-                        <div className="control-card">
-                          <Icon
-                            name="key"
-                            size={17}
-                          />
-
-                          <div>
-                            <strong>
-                              Reset Password
-                            </strong>
-
-                            <span>
-                              Use the account
-                              security controls
-                              in Settings.
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={
-                              !canManageEmployees
-                            }
-                            onClick={() =>
-                              navigateTo(
-                                '/settings'
-                              )
-                            }
-                          >
-                            Open
-                          </button>
-                        </div>
-
-                        <div className="control-card">
-                          <Icon
-                            name="shield"
-                            size={17}
-                          />
-
-                          <div>
-                            <strong>
-                              Role
-                            </strong>
-
-                            <span>
-                              {prettyValue(
-                                selectedEmployee.role
-                              )}{' '}
-                              · role changes are
-                              HR/Admin only.
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={
-                              !canManageEmployees
-                            }
-                            onClick={() =>
-                              setShowEdit(false)
-                            }
-                          >
-                            Edit
-                          </button>
-                        </div>
-
-                        <div className="control-card">
-                          <Icon
                             name={
                               selectedEmployee.is_active
                                 ? 'unlock'
@@ -5967,24 +6005,97 @@ async function openProfile(
                           <div>
                             <strong>
                               {selectedEmployee.is_active
-                                ? 'Unlock / Disable'
-                                : 'Unlock Account'}
+                                ? 'Account Active'
+                                : 'Account Inactive'}
                             </strong>
 
                             <span>
-                              Account state follows
-                              the employee status.
+                              Account access follows the employee status.
                             </span>
                           </div>
 
                           <button
                             type="button"
-                            disabled={
-                              !canManageEmployees
-                            }
+                            disabled={!canManageEmployees}
                             onClick={() =>
-                              openStatusManager(
-                                selectedEmployee
+                              openStatusManager(selectedEmployee)
+                            }
+                          >
+                            Change
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon name="key" size={17} />
+
+                          <div>
+                            <strong>Reset Password</strong>
+
+                            <span>
+                              Set a new temporary password for this employee account.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!canManageEmployees}
+                            onClick={() =>
+                              openAccountControls(
+                                selectedEmployee,
+                                'password'
+                              )
+                            }
+                          >
+                            Reset
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon name="shield" size={17} />
+
+                          <div>
+                            <strong>Account Role</strong>
+
+                            <span>
+                              {prettyValue(selectedEmployee.role)} · HR/Admin only.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!canManageEmployees}
+                            onClick={() =>
+                              openAccountControls(
+                                selectedEmployee,
+                                'role'
+                              )
+                            }
+                          >
+                            Edit
+                          </button>
+                        </div>
+
+                        <div className="control-card">
+                          <Icon
+                            name="shield"
+                            size={17}
+                          />
+
+                          <div>
+                            <strong>Security Controls</strong>
+
+                            <span>
+                              Password and role changes are recorded in Activity History.
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!canManageEmployees}
+                            onClick={() =>
+                              openAccountControls(
+                                selectedEmployee,
+                                'password'
                               )
                             }
                           >
@@ -5993,7 +6104,7 @@ async function openProfile(
                         </div>
                       </div>
 
-                      <div className="last-login">
+<div className="last-login">
                         <Icon
                           name="clock"
                           size={15}
@@ -6146,50 +6257,73 @@ async function openProfile(
                         Activity History
                       </h3>
 
-                      {profile?.activity &&
-                      profile.activity
-                        .length > 0 ? (
+                      {(profile?.activityHistory?.length ||
+                        profile?.activity?.length ||
+                        0) > 0 ? (
                         <div className="activity-list">
-                          {profile.activity.map(
-                            (
-                              item,
-                              index
-                            ) => (
-                              <div
-                                key={
-                                  item.id ||
-                                  index
+                          {(profile?.activityHistory?.length
+                            ? profile.activityHistory
+                            : profile?.activity || []
+                          ).map((item, index) => {
+                            let detailsText = '';
+
+                            if (item.details) {
+                              if (typeof item.details === 'string') {
+                                try {
+                                  const parsed = JSON.parse(item.details);
+                                  detailsText =
+                                    typeof parsed === 'object' && parsed !== null
+                                      ? Object.entries(parsed as Record<string, unknown>)
+                                          .filter(([, value]) => value !== undefined && value !== null && value !== '')
+                                          .map(([key, value]) => `${prettyValue(key)}: ${String(value)}`)
+                                          .join(' · ')
+                                      : String(parsed);
+                                } catch {
+                                  detailsText = item.details;
                                 }
+                              } else {
+                                detailsText = Object.entries(item.details)
+                                  .filter(([, value]) => value !== undefined && value !== null && value !== '')
+                                  .map(([key, value]) => `${prettyValue(key)}: ${String(value)}`)
+                                  .join(' · ');
+                              }
+                            }
+
+                            const actorName =
+                              item.actor_first_name || item.actor_last_name
+                                ? `${item.actor_first_name || ''} ${item.actor_last_name || ''}`.trim()
+                                : item.actor_email || 'System';
+
+                            const actionLabel = prettyValue(item.action || 'Activity');
+
+                            return (
+                              <div
+                                key={item.id || index}
                                 className="activity-item"
                               >
                                 <div className="activity-dot" />
 
                                 <div>
-                                  <strong>
-                                    {item.action ||
-                                      'Activity'}
-                                  </strong>
+                                  <strong>{actionLabel}</strong>
 
                                   <span>
-                                    {item.details ||
+                                    {detailsText ||
                                       item.entity_type ||
-                                      ''}
+                                      `Performed by ${actorName}`}
                                   </span>
 
                                   <small>
-                                    {formatDate(
-                                      item.created_at
-                                    )}
+                                    {formatDate(item.created_at)}
+                                    {actorName ? ` · ${actorName}` : ''}
                                   </small>
                                 </div>
                               </div>
-                            )
-                          )}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="empty">
-                          No activity history
-                          available.
+                          No activity history available.
                         </div>
                       )}
                     </div>
@@ -6202,6 +6336,181 @@ async function openProfile(
       )}
 
       {/* ================================================================ */}
+      {/* ACCOUNT CONTROLS MODAL */}
+      {showAccountControls && selectedEmployee && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={() => setShowAccountControls(false)}
+        >
+          <div
+            className="modal account-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <h2>Employee Account Controls</h2>
+                <p>
+                  Manage account security for{' '}
+                  <strong>
+                    {selectedEmployee.first_name}{' '}
+                    {selectedEmployee.last_name}
+                  </strong>
+                  .
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="close-button"
+                onClick={() => setShowAccountControls(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="account-tabs">
+              <button
+                type="button"
+                className={
+                  accountAction === 'password'
+                    ? 'account-tab active'
+                    : 'account-tab'
+                }
+                onClick={() => {
+                  setAccountAction('password');
+                  setAccountError('');
+                  setAccountSuccess('');
+                }}
+              >
+                <Icon name="key" size={15} />
+                Reset Password
+              </button>
+
+              <button
+                type="button"
+                className={
+                  accountAction === 'role'
+                    ? 'account-tab active'
+                    : 'account-tab'
+                }
+                onClick={() => {
+                  setAccountAction('role');
+                  setAccountError('');
+                  setAccountSuccess('');
+                }}
+              >
+                <Icon name="shield" size={15} />
+                Change Role
+              </button>
+            </div>
+
+            {accountError && (
+              <div className="error-box">
+                {accountError}
+              </div>
+            )}
+
+            {accountSuccess && (
+              <div className="success-box">
+                {accountSuccess}
+              </div>
+            )}
+
+            {accountAction === 'password' ? (
+              <div className="account-form">
+                <div className="account-info-box">
+                  <strong>Account email</strong>
+                  <span>{selectedEmployee.email}</span>
+                </div>
+
+                <label>
+                  <span>New Password *</span>
+                  <input
+                    type="password"
+                    value={accountPassword}
+                    onChange={(event) =>
+                      setAccountPassword(event.target.value)
+                    }
+                    placeholder="Minimum 8 characters"
+                    autoComplete="new-password"
+                  />
+                </label>
+
+                <label>
+                  <span>Confirm Password *</span>
+                  <input
+                    type="password"
+                    value={accountPasswordConfirm}
+                    onChange={(event) =>
+                      setAccountPasswordConfirm(event.target.value)
+                    }
+                    placeholder="Re-enter the new password"
+                    autoComplete="new-password"
+                  />
+                </label>
+
+                <div className="account-warning">
+                  The password itself is never stored in the activity history.
+                </div>
+              </div>
+            ) : (
+              <div className="account-form">
+                <div className="account-info-box">
+                  <strong>Current role</strong>
+                  <span>{prettyValue(selectedEmployee.role)}</span>
+                </div>
+
+                <label>
+                  <span>Account Role *</span>
+                  <select
+                    value={accountRole}
+                    onChange={(event) =>
+                      setAccountRole(event.target.value)
+                    }
+                  >
+                    <option value="EMPLOYEE">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="PAYROLL">Payroll</option>
+                    <option value="HR_ADMIN">HR Admin</option>
+                    {currentRole === 'SUPER_ADMIN' && (
+                      <option value="SUPER_ADMIN">Super Admin</option>
+                    )}
+                  </select>
+                </label>
+
+                <div className="account-warning">
+                  Role changes affect the permissions available after the employee signs in again.
+                </div>
+              </div>
+            )}
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setShowAccountControls(false)}
+                disabled={accountSaving}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={saveAccountControl}
+                disabled={accountSaving}
+              >
+                {accountSaving
+                  ? 'Saving...'
+                  : accountAction === 'password'
+                    ? 'Reset Password'
+                    : 'Save Role'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DOCUMENT ADD / EDIT MODAL */}
       {/* ================================================================ */}
       {showDocumentForm &&
@@ -7759,6 +8068,98 @@ async function openProfile(
           color: #1d4ed8;
         }
 
+        .account-modal {
+          max-width: 520px;
+        }
+
+        .account-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+
+        .account-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #64748b;
+          border-radius: 8px;
+          padding: 8px 11px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .account-tab.active {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #1d4ed8;
+        }
+
+        .account-form {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .account-form label {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .account-form label > span,
+        .account-info-box strong {
+          font-size: 11px;
+          font-weight: 700;
+          color: #475569;
+        }
+
+        .account-form input,
+        .account-form select {
+          width: 100%;
+          border: 1px solid #dbe2ea;
+          border-radius: 8px;
+          padding: 10px 11px;
+          font-size: 13px;
+          background: #ffffff;
+          color: #0f172a;
+          outline: none;
+        }
+
+        .account-form input:focus,
+        .account-form select:focus {
+          border-color: #93c5fd;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .account-info-box {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 11px 12px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+
+        .account-info-box span {
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .account-warning {
+          padding: 10px 11px;
+          border-radius: 8px;
+          background: #fff7ed;
+          color: #9a3412;
+          border: 1px solid #fed7aa;
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
         .account-controls-section {
           width: 100%;
         }
@@ -8303,6 +8704,45 @@ async function openProfile(
         :global(.hrms-dark-mode) .permission-badge {
           background: #172554;
           color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .account-tab {
+          background: #172033;
+          border-color: #334155;
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .account-tab.active {
+          background: #172554;
+          border-color: #1d4ed8;
+          color: #93c5fd;
+        }
+
+        :global(.hrms-dark-mode) .account-form label > span,
+        :global(.hrms-dark-mode) .account-info-box strong {
+          color: #cbd5e1;
+        }
+
+        :global(.hrms-dark-mode) .account-form input,
+        :global(.hrms-dark-mode) .account-form select {
+          background: #0f172a;
+          border-color: #334155;
+          color: #e2e8f0;
+        }
+
+        :global(.hrms-dark-mode) .account-info-box {
+          background: #172033;
+          border-color: #334155;
+        }
+
+        :global(.hrms-dark-mode) .account-info-box span {
+          color: #94a3b8;
+        }
+
+        :global(.hrms-dark-mode) .account-warning {
+          background: #431407;
+          color: #fdba74;
+          border-color: #9a3412;
         }
 
         :global(.hrms-dark-mode) .control-card,

@@ -1,10 +1,7 @@
-
 import { Router, Request, Response, NextFunction } from 'express';
-
 import type { Knex } from 'knex';
-
+import bcrypt from 'bcryptjs';
 import { db } from '../db';
-
 import { auth, role } from '../middleware/auth';
 
 const router = Router();
@@ -52,14 +49,9 @@ const DOCUMENT_STATUSES = [
   'ACTIVE',
 ] as const;
 
-type EmployeeStatus =
-  (typeof EMPLOYEE_STATUSES)[number];
-
-type DocumentType =
-  (typeof DOCUMENT_TYPES)[number];
-
-type DocumentStatus =
-  (typeof DOCUMENT_STATUSES)[number];
+type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
+type DocumentType = (typeof DOCUMENT_TYPES)[number];
+type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
 function asyncHandler(
   handler: (
@@ -82,9 +74,7 @@ function isValidStatus(
 ): value is EmployeeStatus {
   return (
     typeof value === 'string' &&
-    EMPLOYEE_STATUSES.includes(
-      value as EmployeeStatus
-    )
+    EMPLOYEE_STATUSES.includes(value as EmployeeStatus)
   );
 }
 
@@ -93,9 +83,7 @@ function isValidDocumentType(
 ): value is DocumentType {
   return (
     typeof value === 'string' &&
-    DOCUMENT_TYPES.includes(
-      value as DocumentType
-    )
+    DOCUMENT_TYPES.includes(value as DocumentType)
   );
 }
 
@@ -104,9 +92,7 @@ function isValidDocumentStatus(
 ): value is DocumentStatus {
   return (
     typeof value === 'string' &&
-    DOCUMENT_STATUSES.includes(
-      value as DocumentStatus
-    )
+    DOCUMENT_STATUSES.includes(value as DocumentStatus)
   );
 }
 
@@ -139,6 +125,30 @@ function toNullableNumber(
 }
 
 /* =========================================================
+   AUDIT HELPER
+   ========================================================= */
+
+async function createAuditLog(
+  userId: number,
+  action: string,
+  entityType: string,
+  entityId: number | null,
+  details: Record<string, unknown>
+) {
+  try {
+    await db('audit_logs').insert({
+      user_id: userId,
+      action,
+      entity_type: entityType,
+      entity_id: entityId,
+      details: JSON.stringify(details),
+    });
+  } catch {
+    // Audit logging must never break the main operation.
+  }
+}
+
+/* =========================================================
    OPTIONS
    ========================================================= */
 
@@ -155,9 +165,7 @@ router.get(
       )
       .orderBy('name', 'asc');
 
-    const designations = await db(
-      'designations'
-    )
+    const designations = await db('designations')
       .select(
         'id',
         'name',
@@ -226,9 +234,7 @@ router.put(
   auth,
   role(...ADMIN_ROLES),
   asyncHandler(async (req, res) => {
-    const employeeId = Number(
-      req.params.id
-    );
+    const employeeId = Number(req.params.id);
 
     if (!Number.isInteger(employeeId)) {
       res.status(400).json({
@@ -334,14 +340,8 @@ router.put(
       const designation = await db(
         'designations'
       )
-        .where(
-          'id',
-          newDesignationId
-        )
-        .where(
-          'is_active',
-          true
-        )
+        .where('id', newDesignationId)
+        .where('is_active', true)
         .first();
 
       if (!designation) {
@@ -352,14 +352,11 @@ router.put(
         return;
       }
 
-      designationName =
-        designation.name;
+      designationName = designation.name;
     }
 
     if (newManagerId !== null) {
-      if (
-        newManagerId === employeeId
-      ) {
+      if (newManagerId === employeeId) {
         res.status(400).json({
           message:
             'Employee cannot report to themselves',
@@ -367,9 +364,7 @@ router.put(
         return;
       }
 
-      const manager = await db(
-        'employees'
-      )
+      const manager = await db('employees')
         .where(
           'employees.id',
           newManagerId
@@ -440,8 +435,7 @@ router.put(
               ? status
               : existing.status,
 
-          updated_at:
-            trx.fn.now(),
+          updated_at: trx.fn.now(),
         };
 
         if (metadata !== undefined) {
@@ -450,10 +444,7 @@ router.put(
         }
 
         await trx('employees')
-          .where(
-            'id',
-            employeeId
-          )
+          .where('id', employeeId)
           .update(employeeUpdate);
 
         if (
@@ -464,20 +455,15 @@ router.put(
             string,
             unknown
           > = {
-            updated_at:
-              trx.fn.now(),
+            updated_at: trx.fn.now(),
           };
 
-          if (
-            firstName !== undefined
-          ) {
+          if (firstName !== undefined) {
             userUpdate.first_name =
               firstName;
           }
 
-          if (
-            lastName !== undefined
-          ) {
+          if (lastName !== undefined) {
             userUpdate.last_name =
               lastName;
           }
@@ -542,6 +528,32 @@ router.put(
       )
       .first();
 
+    await createAuditLog(
+      req.user!.id,
+      'UPDATE_EMPLOYEE',
+      'employees',
+      employeeId,
+      {
+        employeeId,
+        employeeCode:
+          existing.employee_code,
+        changes: {
+          firstName,
+          lastName,
+          phone,
+          address,
+          departmentId,
+          designationId,
+          managerId,
+          employmentType,
+          workLocation,
+          joiningDate,
+          status,
+          metadata,
+        },
+      }
+    );
+
     res.json({
       message:
         'Employee updated successfully',
@@ -581,9 +593,7 @@ router.patch(
       return;
     }
 
-    const employee = await db(
-      'employees'
-    )
+    const employee = await db('employees')
       .where('id', employeeId)
       .first();
 
@@ -601,10 +611,7 @@ router.patch(
     await db.transaction(
       async (trx: Knex.Transaction) => {
         await trx('employees')
-          .where(
-            'id',
-            employeeId
-          )
+          .where('id', employeeId)
           .update({
             status,
             updated_at:
@@ -624,12 +631,211 @@ router.patch(
       }
     );
 
+    await createAuditLog(
+      req.user!.id,
+      'UPDATE_EMPLOYEE_STATUS',
+      'employees',
+      employeeId,
+      {
+        employeeId,
+        previousStatus:
+          employee.status,
+        newStatus: status,
+        isActive,
+      }
+    );
+
     res.json({
       message:
         'Employee status updated successfully',
       employeeId,
       status,
       isActive,
+    });
+  })
+);
+
+/* =========================================================
+   EMPLOYEE ACCOUNT CONTROLS
+   ========================================================= */
+
+const USER_ROLES = [
+  'SUPER_ADMIN',
+  'HR_ADMIN',
+  'MANAGER',
+  'PAYROLL',
+  'EMPLOYEE',
+] as const;
+
+type UserRole = (typeof USER_ROLES)[number];
+
+function isValidUserRole(value: unknown): value is UserRole {
+  return (
+    typeof value === 'string' &&
+    USER_ROLES.includes(value as UserRole)
+  );
+}
+
+router.patch(
+  '/employees/:id/account-role',
+  auth,
+  role(...ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const employeeId = Number(req.params.id);
+    const newRole = req.body?.role;
+
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      res.status(400).json({ message: 'Invalid employee ID' });
+      return;
+    }
+
+    if (!isValidUserRole(newRole)) {
+      res.status(400).json({
+        message: `Invalid role. Allowed values: ${USER_ROLES.join(', ')}`,
+      });
+      return;
+    }
+
+    const employee = await db('employees')
+      .leftJoin('users', 'users.id', 'employees.user_id')
+      .select(
+        'employees.id',
+        'employees.employee_code',
+        'employees.user_id',
+        'users.role'
+      )
+      .where('employees.id', employeeId)
+      .first();
+
+    if (!employee) {
+      res.status(404).json({ message: 'Employee not found' });
+      return;
+    }
+
+    if (Number(employee.user_id) === Number(req.user!.id)) {
+      res.status(400).json({
+        message: 'You cannot change your own account role',
+      });
+      return;
+    }
+
+    if (
+      newRole === 'SUPER_ADMIN' &&
+      req.user!.role !== 'SUPER_ADMIN'
+    ) {
+      res.status(403).json({
+        message: 'Only SUPER_ADMIN can assign the SUPER_ADMIN role',
+      });
+      return;
+    }
+
+    if (
+      employee.role === 'SUPER_ADMIN' &&
+      req.user!.role !== 'SUPER_ADMIN'
+    ) {
+      res.status(403).json({
+        message: 'Only SUPER_ADMIN can change a SUPER_ADMIN account',
+      });
+      return;
+    }
+
+    await db('users')
+      .where('id', employee.user_id)
+      .update({
+        role: newRole,
+        updated_at: db.fn.now(),
+      });
+
+    await createAuditLog(
+      req.user!.id,
+      'UPDATE_EMPLOYEE_ROLE',
+      'users',
+      Number(employee.user_id),
+      {
+        employeeId,
+        employeeCode: employee.employee_code,
+        previousRole: employee.role,
+        newRole,
+      }
+    );
+
+    res.json({
+      message: 'Employee account role updated successfully',
+      employeeId,
+      previousRole: employee.role,
+      role: newRole,
+    });
+  })
+);
+
+router.post(
+  '/employees/:id/reset-password',
+  auth,
+  role(...ADMIN_ROLES),
+  asyncHandler(async (req, res) => {
+    const employeeId = Number(req.params.id);
+    const password = String(req.body?.password || '');
+
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      res.status(400).json({ message: 'Invalid employee ID' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({
+        message: 'Password must be at least 8 characters long',
+      });
+      return;
+    }
+
+    const employee = await db('employees')
+      .leftJoin('users', 'users.id', 'employees.user_id')
+      .select(
+        'employees.id',
+        'employees.employee_code',
+        'employees.user_id',
+        'users.email',
+        'users.role'
+      )
+      .where('employees.id', employeeId)
+      .first();
+
+    if (!employee) {
+      res.status(404).json({ message: 'Employee not found' });
+      return;
+    }
+
+    if (Number(employee.user_id) === Number(req.user!.id)) {
+      res.status(400).json({
+        message: 'Use your own account security flow to change your password',
+      });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await db('users')
+      .where('id', employee.user_id)
+      .update({
+        password_hash: passwordHash,
+        updated_at: db.fn.now(),
+      });
+
+    await createAuditLog(
+      req.user!.id,
+      'RESET_EMPLOYEE_PASSWORD',
+      'users',
+      Number(employee.user_id),
+      {
+        employeeId,
+        employeeCode: employee.employee_code,
+        email: employee.email,
+      }
+    );
+
+    res.json({
+      message: 'Employee password reset successfully',
+      employeeId,
     });
   })
 );
@@ -728,6 +934,18 @@ router.post(
             null,
         })
         .returning('*');
+
+    await createAuditLog(
+      req.user!.id,
+      'CREATE_DEPARTMENT',
+      'departments',
+      department.id,
+      {
+        departmentId:
+          department.id,
+        name: department.name,
+      }
+    );
 
     res.status(201).json({
       message:
@@ -830,6 +1048,20 @@ router.put(
         })
         .returning('*');
 
+    await createAuditLog(
+      req.user!.id,
+      'UPDATE_DEPARTMENT',
+      'departments',
+      departmentId,
+      {
+        departmentId,
+        previousName:
+          department.name,
+        newName:
+          updated.name,
+      }
+    );
+
     res.json({
       message:
         'Department updated successfully',
@@ -923,6 +1155,17 @@ router.delete(
             departmentId
           )
           .delete();
+      }
+    );
+
+    await createAuditLog(
+      req.user!.id,
+      'DELETE_DEPARTMENT',
+      'departments',
+      departmentId,
+      {
+        departmentId,
+        name: department.name,
       }
     );
 
@@ -1034,6 +1277,18 @@ router.post(
         })
         .returning('*');
 
+    await createAuditLog(
+      req.user!.id,
+      'CREATE_DESIGNATION',
+      'designations',
+      designation.id,
+      {
+        designationId:
+          designation.id,
+        name: designation.name,
+      }
+    );
+
     res.status(201).json({
       message:
         'Designation created successfully',
@@ -1140,6 +1395,20 @@ router.put(
         })
         .returning('*');
 
+    await createAuditLog(
+      req.user!.id,
+      'UPDATE_DESIGNATION',
+      'designations',
+      designationId,
+      {
+        designationId,
+        previousName:
+          designation.name,
+        newName:
+          updated.name,
+      }
+    );
+
     res.json({
       message:
         'Designation updated successfully',
@@ -1215,6 +1484,17 @@ router.delete(
         designationId
       )
       .delete();
+
+    await createAuditLog(
+      req.user!.id,
+      'DELETE_DESIGNATION',
+      'designations',
+      designationId,
+      {
+        designationId,
+        name: designation.name,
+      }
+    );
 
     res.json({
       message:
@@ -1295,6 +1575,20 @@ router.patch(
         updated_at:
           db.fn.now(),
       });
+
+    await createAuditLog(
+      req.user!.id,
+      'ASSIGN_EMPLOYEE_DEPARTMENT',
+      'employees',
+      employeeId,
+      {
+        employeeId,
+        previousDepartmentId:
+          employee.department_id,
+        newDepartmentId:
+          departmentId,
+      }
+    );
 
     res.json({
       message:
@@ -1390,6 +1684,22 @@ router.patch(
           db.fn.now(),
       });
 
+    await createAuditLog(
+      req.user!.id,
+      'ASSIGN_EMPLOYEE_DESIGNATION',
+      'employees',
+      employeeId,
+      {
+        employeeId,
+        previousDesignationId:
+          employee.designation_id,
+        newDesignationId:
+          designationId,
+        designation:
+          designation.name,
+      }
+    );
+
     res.json({
       message:
         'Employee designation updated successfully',
@@ -1474,7 +1784,10 @@ router.patch(
           'id',
           normalizedIds
         )
-        .select('id');
+        .select(
+          'id',
+          'department_id'
+        );
 
     if (
       employees.length !==
@@ -1498,6 +1811,21 @@ router.patch(
         updated_at:
           db.fn.now(),
       });
+
+    await createAuditLog(
+      req.user!.id,
+      'BULK_ASSIGN_EMPLOYEE_DEPARTMENT',
+      'employees',
+      null,
+      {
+        employeeIds:
+          normalizedIds,
+        departmentId:
+          newDepartmentId,
+        previousAssignments:
+          employees,
+      }
+    );
 
     res.json({
       message:
@@ -1768,51 +2096,35 @@ router.post(
         .insert({
           employee_id:
             employeeId,
-
           document_name:
             documentName.trim(),
-
           document_type:
             documentType,
-
           uploaded_by:
             currentUser.id,
-
           file_url:
             fileUrl || null,
-
           status:
             status || 'PENDING',
-
           description:
             description?.trim() ||
             null,
         })
         .returning('*');
 
-    try {
-      await db('audit_logs').insert({
-        user_id:
-          currentUser.id,
-        action:
-          'CREATE_EMPLOYEE_DOCUMENT',
-        entity_type:
-          'employee_documents',
-        entity_id:
-          document.id,
-        details:
-          JSON.stringify({
-            employeeId,
-            documentName:
-              document.document_name,
-            documentType:
-              document.document_type,
-          }),
-      });
-    } catch {
-      // Audit logging should not
-      // break document creation.
-    }
+    await createAuditLog(
+      currentUser.id,
+      'CREATE_EMPLOYEE_DOCUMENT',
+      'employee_documents',
+      document.id,
+      {
+        employeeId,
+        documentName:
+          document.document_name,
+        documentType:
+          document.document_type,
+      }
+    );
 
     res.status(201).json({
       message:
@@ -2036,26 +2348,16 @@ router.put(
         .update(updateData)
         .returning('*');
 
-    try {
-      await db('audit_logs').insert({
-        user_id:
-          currentUser.id,
-        action:
-          'UPDATE_EMPLOYEE_DOCUMENT',
-        entity_type:
-          'employee_documents',
-        entity_id:
-          documentId,
-        details:
-          JSON.stringify({
-            employeeId,
-            documentId,
-          }),
-      });
-    } catch {
-      // Audit logging should not
-      // break document update.
-    }
+    await createAuditLog(
+      currentUser.id,
+      'UPDATE_EMPLOYEE_DOCUMENT',
+      'employee_documents',
+      documentId,
+      {
+        employeeId,
+        documentId,
+      }
+    );
 
     res.json({
       message:
@@ -2180,29 +2482,19 @@ router.delete(
       )
       .delete();
 
-    try {
-      await db('audit_logs').insert({
-        user_id:
-          currentUser.id,
-        action:
-          'DELETE_EMPLOYEE_DOCUMENT',
-        entity_type:
-          'employee_documents',
-        entity_id:
-          documentId,
-        details:
-          JSON.stringify({
-            employeeId,
-            documentName:
-              document.document_name,
-            documentType:
-              document.document_type,
-          }),
-      });
-    } catch {
-      // Audit logging should not
-      // break document deletion.
-    }
+    await createAuditLog(
+      currentUser.id,
+      'DELETE_EMPLOYEE_DOCUMENT',
+      'employee_documents',
+      documentId,
+      {
+        employeeId,
+        documentName:
+          document.document_name,
+        documentType:
+          document.document_type,
+      }
+    );
 
     res.json({
       message:
@@ -2214,4 +2506,3 @@ router.delete(
 );
 
 export default router;
-
