@@ -11,6 +11,7 @@ import recruitment from './routes/recruitment';
 import performance from './routes/performance';
 import employeeManagement from './routes/employeeManagement';
 import settings from './routes/settings';
+import leaveManagement from './routes/leaveManagement';
 
 import { notFound, error } from './middleware/error';
 
@@ -52,6 +53,8 @@ app.use('/api', core);
 app.use('/api/recruitment', recruitment);
 
 app.use('/api/performance', performance);
+
+app.use('/api/leave-management', leaveManagement);
 
 // ==================================================
 // EMPLOYEE MANAGEMENT
