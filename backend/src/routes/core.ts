@@ -28,26 +28,41 @@ r.get(
         departmentCountResult,
         leaveResult,
       ] = await Promise.all([
-        db('employees').count('* as count').first(),
+        db('employees')
+          .count('* as count')
+          .first(),
 
         db('employees')
           .where('status', 'ACTIVE')
           .count('* as count')
           .first(),
 
-        db('departments').count('* as count').first(),
+        db('departments')
+          .count('* as count')
+          .first(),
 
         db('leave_requests')
-          .whereIn('status', ['PENDING'])
+          .where('status', 'PENDING')
           .count('* as count')
           .first(),
       ]);
 
       res.json({
-        employees: Number(employeeCountResult?.count ?? 0),
-        activeEmployees: Number(activeEmployeeResult?.count ?? 0),
-        departments: Number(departmentCountResult?.count ?? 0),
-        pendingLeaves: Number(leaveResult?.count ?? 0),
+        employees: Number(
+          employeeCountResult?.count ?? 0
+        ),
+
+        activeEmployees: Number(
+          activeEmployeeResult?.count ?? 0
+        ),
+
+        departments: Number(
+          departmentCountResult?.count ?? 0
+        ),
+
+        pendingLeaves: Number(
+          leaveResult?.count ?? 0
+        ),
       });
     } catch (e) {
       next(e);
@@ -69,13 +84,14 @@ r.get(
   ),
   async (req, res, next) => {
     try {
-      const departments = await db('departments')
-        .select(
-          'id',
-          'name',
-          'description'
-        )
-        .orderBy('name', 'asc');
+      const departments =
+        await db('departments')
+          .select(
+            'id',
+            'name',
+            'description'
+          )
+          .orderBy('name', 'asc');
 
       res.json(departments);
     } catch (e) {
@@ -118,12 +134,16 @@ r.get(
       );
 
       const limitNumber = Math.min(
-        Math.max(Number(limit) || 10, 1),
+        Math.max(
+          Number(limit) || 10,
+          1
+        ),
         100
       );
 
       const offset =
-        (pageNumber - 1) * limitNumber;
+        (pageNumber - 1) *
+        limitNumber;
 
       const allowedSortFields: Record<
         string,
@@ -132,22 +152,26 @@ r.get(
         id: 'employees.id',
         employeeCode:
           'employees.employee_code',
-        firstName: 'users.first_name',
-        lastName: 'users.last_name',
-        email: 'users.email',
-        designation: 'employees.designation',
+        firstName:
+          'users.first_name',
+        lastName:
+          'users.last_name',
+        email:
+          'users.email',
+        designation:
+          'employees.designation',
         joiningDate:
           'employees.joining_date',
-        status: 'employees.status',
+        status:
+          'employees.status',
         createdAt:
           'employees.created_at',
       };
 
-      const requestedSort =
-        String(sortBy);
-
       const sortColumn =
-        allowedSortFields[requestedSort] ??
+        allowedSortFields[
+          String(sortBy)
+        ] ??
         'employees.created_at';
 
       const direction =
@@ -284,29 +308,29 @@ r.get(
         );
       }
 
-      const countQuery = query
-        .clone()
-        .clearSelect()
-        .clearOrder()
-        .countDistinct({
-          count: 'employees.id',
-        })
-        .first();
-
       const countResult =
-        await countQuery;
+        await query
+          .clone()
+          .clearSelect()
+          .clearOrder()
+          .countDistinct({
+            count:
+              'employees.id',
+          })
+          .first();
 
       const total = Number(
         countResult?.count ?? 0
       );
 
-      const employees = await query
-        .orderBy(
-          sortColumn,
-          direction
-        )
-        .limit(limitNumber)
-        .offset(offset);
+      const employees =
+        await query
+          .orderBy(
+            sortColumn,
+            direction
+          )
+          .limit(limitNumber)
+          .offset(offset);
 
       const totalPages =
         Math.ceil(
@@ -319,6 +343,7 @@ r.get(
             db.raw(
               `COUNT(*)::int AS total`
             ),
+
             db.raw(`
               COUNT(
                 CASE
@@ -327,6 +352,7 @@ r.get(
                 END
               )::int AS active
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -335,6 +361,7 @@ r.get(
                 END
               )::int AS inactive
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -343,6 +370,7 @@ r.get(
                 END
               )::int AS "onLeave"
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -351,6 +379,7 @@ r.get(
                 END
               )::int AS suspended
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -371,41 +400,42 @@ r.get(
           total,
           totalPages,
           hasNextPage:
-            pageNumber < totalPages,
+            pageNumber <
+            totalPages,
           hasPreviousPage:
             pageNumber > 1,
         },
 
         statistics: {
-          total:
-            Number(
-              statisticsResult?.total ?? 0
-            ),
+          total: Number(
+            statisticsResult?.total ??
+              0
+          ),
 
-          active:
-            Number(
-              statisticsResult?.active ?? 0
-            ),
+          active: Number(
+            statisticsResult?.active ??
+              0
+          ),
 
-          inactive:
-            Number(
-              statisticsResult?.inactive ?? 0
-            ),
+          inactive: Number(
+            statisticsResult?.inactive ??
+              0
+          ),
 
-          onLeave:
-            Number(
-              statisticsResult?.onLeave ?? 0
-            ),
+          onLeave: Number(
+            statisticsResult?.onLeave ??
+              0
+          ),
 
-          suspended:
-            Number(
-              statisticsResult?.suspended ?? 0
-            ),
+          suspended: Number(
+            statisticsResult?.suspended ??
+              0
+          ),
 
-          terminated:
-            Number(
-              statisticsResult?.terminated ?? 0
-            ),
+          terminated: Number(
+            statisticsResult?.terminated ??
+              0
+          ),
         },
       });
     } catch (e) {
@@ -424,25 +454,38 @@ r.get(
   role(
     'SUPER_ADMIN',
     'HR_ADMIN',
-    'MANAGER'
+    'MANAGER',
+    'EMPLOYEE'
   ),
   async (req, res, next) => {
     try {
-      const employeeId = Number(
-        req.params.id
-      );
+      const employeeId =
+        Number(req.params.id);
 
       if (
-        !Number.isInteger(employeeId) ||
+        !Number.isInteger(
+          employeeId
+        ) ||
         employeeId <= 0
       ) {
         return res.status(400).json({
-          message: 'Invalid employee ID',
+          message:
+            'Invalid employee ID',
+        });
+      }
+
+      const currentUser =
+        req.user;
+
+      if (!currentUser) {
+        return res.status(401).json({
+          message:
+            'Authentication required',
         });
       }
 
       /* =====================================================
-         EMPLOYEE + USER + DEPARTMENT + MANAGER
+         EMPLOYEE INFORMATION
       ===================================================== */
 
       const employee =
@@ -473,6 +516,7 @@ r.get(
             'employees.employee_code',
             'employees.department_id',
             'employees.designation',
+            'employees.designation_id',
             'employees.manager_id',
             'employees.joining_date',
             'employees.employment_type',
@@ -480,6 +524,7 @@ r.get(
             'employees.phone',
             'employees.address',
             'employees.status',
+            'employees.metadata',
             'employees.created_at',
             'employees.updated_at',
 
@@ -509,8 +554,49 @@ r.get(
 
       if (!employee) {
         return res.status(404).json({
-          message: 'Employee not found',
+          message:
+            'Employee not found',
         });
+      }
+
+      /* =====================================================
+         RBAC
+      ===================================================== */
+
+      if (
+        currentUser.role ===
+        'EMPLOYEE'
+      ) {
+        if (
+          Number(
+            employee.user_id
+          ) !==
+          Number(currentUser.id)
+        ) {
+          return res.status(403).json({
+            message:
+              'You can only access your own employee profile',
+          });
+        }
+      }
+
+      if (
+        currentUser.role ===
+        'MANAGER'
+      ) {
+        if (
+          Number(
+            employee.manager_id
+          ) !==
+          Number(
+            currentUser.employeeId
+          )
+        ) {
+          return res.status(403).json({
+            message:
+              'You can only access profiles of employees who report to you',
+          });
+        }
       }
 
       /* =====================================================
@@ -548,6 +634,7 @@ r.get(
             db.raw(
               `COUNT(*)::int AS total_records`
             ),
+
             db.raw(`
               COUNT(
                 CASE
@@ -556,6 +643,7 @@ r.get(
                 END
               )::int AS present
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -564,6 +652,7 @@ r.get(
                 END
               )::int AS absent
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -572,6 +661,16 @@ r.get(
                 END
               )::int AS excused
             `),
+
+            db.raw(`
+              COUNT(
+                CASE
+                  WHEN UPPER(status) = 'LATE'
+                  THEN 1
+                END
+              )::int AS late
+            `),
+
             db.raw(`
               COALESCE(
                 SUM(worked_minutes),
@@ -583,14 +682,14 @@ r.get(
 
       const totalAttendance =
         Number(
-          attendanceSummaryResult?.total_records ??
-            0
+          attendanceSummaryResult
+            ?.total_records ?? 0
         );
 
       const presentAttendance =
         Number(
-          attendanceSummaryResult?.present ??
-            0
+          attendanceSummaryResult
+            ?.present ?? 0
         );
 
       const attendancePercentage =
@@ -605,7 +704,7 @@ r.get(
           : 0;
 
       /* =====================================================
-         LEAVE SUMMARY + HISTORY
+         LEAVE REQUESTS
       ===================================================== */
 
       const leaveRequests =
@@ -647,6 +746,7 @@ r.get(
             db.raw(
               `COUNT(*)::int AS total_requests`
             ),
+
             db.raw(`
               COUNT(
                 CASE
@@ -655,6 +755,7 @@ r.get(
                 END
               )::int AS approved
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -663,6 +764,7 @@ r.get(
                 END
               )::int AS pending
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -671,6 +773,7 @@ r.get(
                 END
               )::int AS rejected
             `),
+
             db.raw(`
               COUNT(
                 CASE
@@ -679,6 +782,7 @@ r.get(
                 END
               )::int AS cancelled
             `),
+
             db.raw(`
               COALESCE(
                 SUM(
@@ -694,52 +798,127 @@ r.get(
           )
           .first();
 
-      /* =====================================================
-         SALARY STRUCTURE
-      ===================================================== */
+      const leaveTypeBreakdown =
+        await db('leave_requests')
+          .leftJoin(
+            'leave_types',
+            'leave_requests.leave_type_id',
+            'leave_types.id'
+          )
+          .select(
+            'leave_requests.leave_type_id',
+            'leave_types.name as leave_type_name',
 
-      const salaryStructure =
-        await db('salary_structures')
+            db.raw(`
+              COALESCE(
+                SUM(
+                  CASE
+                    WHEN leave_requests.status = 'APPROVED'
+                    THEN leave_requests.days
+                    ELSE 0
+                  END
+                ),
+                0
+              )::int AS approved_days
+            `),
+
+            db.raw(`
+              COUNT(
+                CASE
+                  WHEN leave_requests.status = 'PENDING'
+                  THEN 1
+                END
+              )::int AS pending_requests
+            `)
+          )
           .where(
-            'employee_id',
+            'leave_requests.employee_id',
             employeeId
           )
-          .orderBy(
-            'effective_from',
-            'desc'
+          .groupBy(
+            'leave_requests.leave_type_id',
+            'leave_types.name'
           )
-          .first();
+          .orderBy(
+            'leave_types.name',
+            'asc'
+          );
 
       /* =====================================================
          PAYROLL
       ===================================================== */
 
-      const payroll =
-        await db('payroll')
-          .where(
-            'employee_id',
-            employeeId
-          )
-          .orderBy(
-            'pay_year',
-            'desc'
-          )
-          .orderBy(
-            'pay_month',
-            'desc'
-          );
+      let salaryStructure:
+        any = null;
 
-      const latestPayroll =
-        payroll.length > 0
-          ? payroll[0]
-          : null;
+      let payroll:
+        any[] = [];
+
+      let latestPayroll:
+        any = null;
+
+      const canViewPayroll =
+        currentUser.role ===
+          'SUPER_ADMIN' ||
+        currentUser.role ===
+          'HR_ADMIN' ||
+        currentUser.role ===
+          'PAYROLL' ||
+        (
+          currentUser.role ===
+            'EMPLOYEE' &&
+          Number(
+            employee.user_id
+          ) ===
+            Number(
+              currentUser.id
+            )
+        );
+
+      if (canViewPayroll) {
+        salaryStructure =
+          await db(
+            'salary_structures'
+          )
+            .where(
+              'employee_id',
+              employeeId
+            )
+            .orderBy(
+              'effective_from',
+              'desc'
+            )
+            .first();
+
+        payroll =
+          await db('payroll')
+            .where(
+              'employee_id',
+              employeeId
+            )
+            .orderBy(
+              'pay_year',
+              'desc'
+            )
+            .orderBy(
+              'pay_month',
+              'desc'
+            );
+
+        latestPayroll =
+          payroll.length > 0
+            ? payroll[0]
+            : null;
+      }
 
       /* =====================================================
          PERFORMANCE GOALS
       ===================================================== */
 
       const performanceGoals =
-        await db('performance_goals')
+        await db(
+          'performance_goals'
+        )
           .where(
             'employee_id',
             employeeId
@@ -760,12 +939,32 @@ r.get(
             'desc'
           );
 
+      const completedGoals =
+        performanceGoals.filter(
+          (goal) =>
+            String(
+              goal.status
+            ).toUpperCase() ===
+            'COMPLETED'
+        ).length;
+
+      const inProgressGoals =
+        performanceGoals.filter(
+          (goal) =>
+            String(
+              goal.status
+            ).toUpperCase() ===
+            'IN_PROGRESS'
+        ).length;
+
       /* =====================================================
          PERFORMANCE REVIEWS
       ===================================================== */
 
       const performanceReviews =
-        await db('performance_reviews')
+        await db(
+          'performance_reviews'
+        )
           .leftJoin(
             'users as reviewers',
             'performance_reviews.reviewer_id',
@@ -801,19 +1000,18 @@ r.get(
             'desc'
           );
 
-      /* =====================================================
-         PERFORMANCE REVIEW GOALS
-      ===================================================== */
-
       const reviewIds =
         performanceReviews.map(
-          (review) => review.id
+          (review) =>
+            review.id
         );
 
-      let performanceReviewGoals: any[] =
-        [];
+      let performanceReviewGoals:
+        any[] = [];
 
-      if (reviewIds.length > 0) {
+      if (
+        reviewIds.length > 0
+      ) {
         performanceReviewGoals =
           await db(
             'performance_review_goals'
@@ -843,53 +1041,27 @@ r.get(
             );
       }
 
-      /* =====================================================
-         ACTIVITY HISTORY
-      ===================================================== */
-
-      const activityHistory =
-        await db('audit_logs')
-          .where(
-            'user_id',
-            employee.user_id
-          )
-          .select(
-            'id',
-            'action',
-            'entity_type',
-            'entity_id',
-            'details',
-            'ip_address',
-            'created_at'
-          )
-          .orderBy(
-            'created_at',
-            'desc'
-          )
-          .limit(100);
-
-      /* =====================================================
-         DOCUMENTS
-      ===================================================== */
-
-      const documents: any[] = [];
-
-      /* =====================================================
-         PERFORMANCE SUMMARY
-      ===================================================== */
-
       const ratings =
         performanceReviews
           .map((review) =>
-            review.rating !== null &&
-            review.rating !== undefined
-              ? Number(review.rating)
+            review.rating !==
+              null &&
+            review.rating !==
+              undefined
+              ? Number(
+                  review.rating
+                )
               : null
           )
           .filter(
-            (rating): rating is number =>
-              rating !== null &&
-              !Number.isNaN(rating)
+            (
+              rating
+            ): rating is number =>
+              rating !==
+                null &&
+              !Number.isNaN(
+                rating
+              )
           );
 
       const averageRating =
@@ -897,13 +1069,393 @@ r.get(
           ? Number(
               (
                 ratings.reduce(
-                  (sum, rating) =>
+                  (
+                    sum,
+                    rating
+                  ) =>
                     sum + rating,
                   0
-                ) / ratings.length
+                ) /
+                ratings.length
               ).toFixed(2)
             )
           : null;
+
+      /* =====================================================
+         EMPLOYEE DOCUMENTS
+      ===================================================== */
+
+      const documents =
+        await db(
+          'employee_documents'
+        )
+          .leftJoin(
+            'users as uploaders',
+            'employee_documents.uploaded_by',
+            'uploaders.id'
+          )
+          .select(
+            'employee_documents.id',
+            'employee_documents.employee_id',
+            'employee_documents.document_name',
+            'employee_documents.document_type',
+            'employee_documents.upload_date',
+            'employee_documents.uploaded_by',
+            'employee_documents.file_url',
+            'employee_documents.status',
+            'employee_documents.description',
+            'employee_documents.created_at',
+            'employee_documents.updated_at',
+
+            db.raw(`
+              CASE
+                WHEN uploaders.id IS NOT NULL
+                THEN CONCAT(
+                  uploaders.first_name,
+                  ' ',
+                  uploaders.last_name
+                )
+                ELSE NULL
+              END AS uploaded_by_name
+            `)
+          )
+          .where(
+            'employee_documents.employee_id',
+            employeeId
+          )
+          .orderBy(
+            'employee_documents.upload_date',
+            'desc'
+          );
+
+      /* =====================================================
+         ACTIVITY HISTORY
+      ===================================================== */
+
+      const documentIds =
+        documents.map(
+          (document) =>
+            Number(document.id)
+        );
+
+      const attendanceIds =
+        attendance.map(
+          (record) =>
+            Number(record.id)
+        );
+
+      const leaveIds =
+        leaveRequests.map(
+          (leave) =>
+            Number(leave.id)
+        );
+
+      const goalIds =
+        performanceGoals.map(
+          (goal) =>
+            Number(goal.id)
+        );
+
+      const reviewIdsForAudit =
+        performanceReviews.map(
+          (review) =>
+            Number(review.id)
+        );
+
+      const reviewGoalIds =
+        performanceReviewGoals.map(
+          (goal) =>
+            Number(goal.id)
+        );
+
+      const payrollIds =
+        payroll.map(
+          (item) =>
+            Number(item.id)
+        );
+
+      const salaryStructureIds =
+        salaryStructure?.id
+          ? [
+              Number(
+                salaryStructure.id
+              ),
+            ]
+          : [];
+
+      /*
+       * IMPORTANT:
+       *
+       * Audit records for Dhanush currently look like:
+       *
+       * entity_type = "employees"
+       * entity_id   = 16
+       *
+       * details =
+       * {"employeeId":16,"employeeCode":"EP-006",...}
+       *
+       * We therefore explicitly match both the direct
+       * employee entity and employeeId inside JSON.
+       */
+
+      const activityHistory =
+        await db('audit_logs')
+          .leftJoin(
+            'users as audit_users',
+            'audit_logs.user_id',
+            'audit_users.id'
+          )
+          .select(
+            'audit_logs.id',
+            'audit_logs.user_id',
+            'audit_logs.action',
+            'audit_logs.entity_type',
+            'audit_logs.entity_id',
+            'audit_logs.details',
+            'audit_logs.ip_address',
+            'audit_logs.created_at',
+
+            'audit_users.first_name as actor_first_name',
+            'audit_users.last_name as actor_last_name',
+            'audit_users.email as actor_email',
+            'audit_users.role as actor_role'
+          )
+          .where(function () {
+
+            /*
+             * 1. Actions performed by this employee.
+             */
+            this.where(
+              'audit_logs.user_id',
+              employee.user_id
+            );
+
+            /*
+             * 2. Direct employee audit records.
+             *
+             * This catches:
+             *
+             * CREATE_EMPLOYEE
+             * UPDATE_EMPLOYEE
+             * UPDATE_EMPLOYEE_STATUS
+             */
+            this.orWhere(function () {
+              this.whereRaw(
+                `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                [
+                  'employee',
+                  'employees',
+                ]
+              )
+                .andWhere(
+                  'audit_logs.entity_id',
+                  employeeId
+                );
+            });
+
+            /*
+             * 3. Employee ID stored in JSON details.
+             *
+             * PostgreSQL extracts:
+             *
+             * details ->> 'employeeId'
+             *
+             * and compares it directly with the
+             * requested employee ID.
+             */
+            this.orWhere(function () {
+              this.whereRaw(
+                `(
+                  CASE
+                    WHEN audit_logs.details IS NULL
+                    THEN NULL
+                    ELSE (
+                      CAST(audit_logs.details AS JSONB)
+                      ->> 'employeeId'
+                    )
+                  END
+                ) = ?`,
+                [
+                  String(employeeId),
+                ]
+              );
+            });
+
+            /*
+             * 4. Employee documents.
+             */
+            if (
+              documentIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'employee_document',
+                    'employee_documents',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    documentIds
+                  );
+              });
+            }
+
+            /*
+             * 5. Attendance.
+             */
+            if (
+              attendanceIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'attendance',
+                    'attendances',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    attendanceIds
+                  );
+              });
+            }
+
+            /*
+             * 6. Leave requests.
+             */
+            if (
+              leaveIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'leave_request',
+                    'leave_requests',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    leaveIds
+                  );
+              });
+            }
+
+            /*
+             * 7. Performance goals.
+             */
+            if (
+              goalIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'performance_goal',
+                    'performance_goals',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    goalIds
+                  );
+              });
+            }
+
+            /*
+             * 8. Performance reviews.
+             */
+            if (
+              reviewIdsForAudit.length >
+              0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'performance_review',
+                    'performance_reviews',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    reviewIdsForAudit
+                  );
+              });
+            }
+
+            /*
+             * 9. Performance review goals.
+             */
+            if (
+              reviewGoalIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'performance_review_goal',
+                    'performance_review_goals',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    reviewGoalIds
+                  );
+              });
+            }
+
+            /*
+             * 10. Payroll.
+             */
+            if (
+              payrollIds.length > 0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'payroll',
+                    'payrolls',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    payrollIds
+                  );
+              });
+            }
+
+            /*
+             * 11. Salary structure.
+             */
+            if (
+              salaryStructureIds.length >
+              0
+            ) {
+              this.orWhere(function () {
+                this.whereRaw(
+                  `LOWER(COALESCE(audit_logs.entity_type, '')) IN (?, ?)`,
+                  [
+                    'salary_structure',
+                    'salary_structures',
+                  ]
+                )
+                  .whereIn(
+                    'audit_logs.entity_id',
+                    salaryStructureIds
+                  );
+              });
+            }
+          })
+          .orderBy(
+            'audit_logs.created_at',
+            'desc'
+          )
+          .limit(100);
 
       /* =====================================================
          RESPONSE
@@ -911,22 +1463,31 @@ r.get(
 
       res.json({
         employee: {
-          id: employee.id,
-          userId: employee.user_id,
+          id:
+            employee.id,
+
+          userId:
+            employee.user_id,
+
           employeeCode:
             employee.employee_code,
 
           personalInformation: {
             firstName:
               employee.first_name,
+
             lastName:
               employee.last_name,
+
             fullName:
               `${employee.first_name} ${employee.last_name}`,
+
             email:
               employee.email,
+
             phone:
               employee.phone,
+
             address:
               employee.address,
           },
@@ -934,20 +1495,32 @@ r.get(
           employmentInformation: {
             employeeCode:
               employee.employee_code,
+
             departmentId:
               employee.department_id,
+
             departmentName:
               employee.department_name,
+
             departmentDescription:
               employee.department_description,
+
+            designationId:
+              employee.designation_id ??
+              null,
+
             designation:
               employee.designation,
+
             joiningDate:
               employee.joining_date,
+
             employmentType:
               employee.employment_type,
+
             workLocation:
               employee.work_location,
+
             status:
               employee.status,
           },
@@ -955,8 +1528,14 @@ r.get(
           accountInformation: {
             role:
               employee.role,
+
             isActive:
               employee.is_active,
+
+            accountStatus:
+              employee.is_active
+                ? 'ACTIVE'
+                : 'INACTIVE',
           },
 
           managerReporting: {
@@ -990,6 +1569,10 @@ r.get(
               null,
           },
 
+          metadata:
+            employee.metadata ??
+            {},
+
           createdAt:
             employee.created_at,
 
@@ -1003,25 +1586,41 @@ r.get(
 
           present:
             Number(
-              attendanceSummaryResult?.present ??
-                0
+              attendanceSummaryResult
+                ?.present ?? 0
             ),
 
           absent:
             Number(
-              attendanceSummaryResult?.absent ??
-                0
+              attendanceSummaryResult
+                ?.absent ?? 0
+            ),
+
+          leave:
+            leaveRequests.filter(
+              (leave) =>
+                String(
+                  leave.status
+                ).toUpperCase() ===
+                'APPROVED'
+            ).length,
+
+          late:
+            Number(
+              attendanceSummaryResult
+                ?.late ?? 0
             ),
 
           excused:
             Number(
-              attendanceSummaryResult?.excused ??
-                0
+              attendanceSummaryResult
+                ?.excused ?? 0
             ),
 
           totalWorkedMinutes:
             Number(
-              attendanceSummaryResult?.total_worked_minutes ??
+              attendanceSummaryResult
+                ?.total_worked_minutes ??
                 0
             ),
 
@@ -1033,57 +1632,82 @@ r.get(
         leaveSummary: {
           totalRequests:
             Number(
-              leaveSummaryResult?.total_requests ??
+              leaveSummaryResult
+                ?.total_requests ??
                 0
             ),
 
           approved:
             Number(
-              leaveSummaryResult?.approved ??
-                0
+              leaveSummaryResult
+                ?.approved ?? 0
             ),
 
           pending:
             Number(
-              leaveSummaryResult?.pending ??
-                0
+              leaveSummaryResult
+                ?.pending ?? 0
             ),
 
           rejected:
             Number(
-              leaveSummaryResult?.rejected ??
-                0
+              leaveSummaryResult
+                ?.rejected ?? 0
             ),
 
           cancelled:
             Number(
-              leaveSummaryResult?.cancelled ??
-                0
+              leaveSummaryResult
+                ?.cancelled ?? 0
             ),
 
           approvedDays:
             Number(
-              leaveSummaryResult?.approved_days ??
+              leaveSummaryResult
+                ?.approved_days ??
                 0
             ),
+
+          typeBreakdown:
+            leaveTypeBreakdown,
         },
 
         leaveRequests,
 
-        payrollSummary: {
-          salaryStructure:
-            salaryStructure ?? null,
+        payrollSummary:
+          canViewPayroll
+            ? {
+                salaryStructure:
+                  salaryStructure ??
+                  null,
 
-          latestPayroll,
+                latestPayroll,
 
-          payrollHistory:
-            payroll,
-        },
+                payrollHistory:
+                  payroll,
+              }
+            : {
+                salaryStructure:
+                  null,
+
+                latestPayroll:
+                  null,
+
+                payrollHistory:
+                  [],
+
+                protected:
+                  true,
+              },
 
         performance: {
           summary: {
             totalGoals:
               performanceGoals.length,
+
+            completedGoals,
+
+            inProgressGoals,
 
             totalReviews:
               performanceReviews.length,
@@ -1105,7 +1729,9 @@ r.get(
                       Number(
                         item.review_id
                       ) ===
-                      Number(review.id)
+                      Number(
+                        review.id
+                      )
                   ),
               })
             ),
@@ -2090,7 +2716,9 @@ r.get(
   async (req, res, next) => {
     try {
       const announcements =
-        await db('announcements')
+        await db(
+          'announcements'
+        )
           .select('*')
           .orderBy(
             'created_at',
@@ -2126,12 +2754,10 @@ r.get(
         req.user?.id;
 
       if (!userId) {
-        return res
-          .status(401)
-          .json({
-            message:
-              'Authentication required',
-          });
+        return res.status(401).json({
+          message:
+            'Authentication required',
+        });
       }
 
       const notifications =
@@ -2188,7 +2814,9 @@ r.get(
       }
 
       const leaveTypes =
-        await db('leave_types')
+        await db(
+          'leave_types'
+        )
           .select('*')
           .where('is_active', true)
           .orderBy(
@@ -2336,7 +2964,9 @@ r.get(
   async (req, res, next) => {
     try {
       const employee =
-        await db('employees')
+        await db(
+          'employees'
+        )
           .where(
             'user_id',
             req.user?.id
@@ -2400,7 +3030,9 @@ r.post(
   async (req, res, next) => {
     try {
       const employee =
-        await db('employees')
+        await db(
+          'employees'
+        )
           .where(
             'user_id',
             req.user?.id
@@ -2724,7 +3356,9 @@ r.get(
   async (req, res, next) => {
     try {
       const employee =
-        await db('employees')
+        await db(
+          'employees'
+        )
           .where(
             'user_id',
             req.user?.id
@@ -2785,7 +3419,9 @@ r.get(
   async (req, res, next) => {
     try {
       const employee =
-        await db('employees')
+        await db(
+          'employees'
+        )
           .where(
             'user_id',
             req.user?.id
@@ -2802,7 +3438,9 @@ r.get(
       }
 
       const payroll =
-        await db('payroll')
+        await db(
+          'payroll'
+        )
           .where(
             'employee_id',
             employee.id
@@ -2840,7 +3478,9 @@ r.get(
   async (req, res, next) => {
     try {
       const payroll =
-        await db('payroll')
+        await db(
+          'payroll'
+        )
           .leftJoin(
             'employees',
             'payroll.employee_id',
@@ -3038,7 +3678,9 @@ r.post(
 
       if (managerId) {
         const manager =
-          await db('employees')
+          await db(
+            'employees'
+          )
             .where(
               'id',
               Number(
@@ -3203,6 +3845,9 @@ r.post(
 
                 details:
                   JSON.stringify({
+                    employeeId:
+                      employee.id,
+
                     employeeCode:
                       employee.employee_code,
 
@@ -3218,9 +3863,9 @@ r.post(
               });
             } catch {
               /*
-                Audit logging should not prevent
-                employee creation.
-              */
+               * Audit logging should not
+               * block employee creation.
+               */
             }
 
             return {
