@@ -1748,6 +1748,958 @@ r.get(
 );
 
 /* =========================================================
+   HR LEAVE MANAGEMENT
+========================================================= */
+
+/* =========================================================
+   HR LEAVE DASHBOARD
+========================================================= */
+
+r.get(
+  '/leave/hr/dashboard',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const totalEmployeesResult =
+        await db('employees')
+          .whereNot(
+            'status',
+            'TERMINATED'
+          )
+          .count('* as count')
+          .first();
+
+      const requestStats =
+        (await db('leave_requests')
+          .select('status')
+          .count('* as count')
+          .groupBy(
+            'status'
+          )) as Array<{
+            status: string;
+            count: string | number;
+          }>;
+
+      const totalRequests =
+        requestStats.reduce(
+          (sum, item) =>
+            sum + Number(item.count),
+          0
+        );
+
+      const pending =
+        Number(
+          requestStats.find(
+            (item) =>
+              item.status ===
+              'PENDING'
+          )?.count ?? 0
+        );
+
+      const approved =
+        Number(
+          requestStats.find(
+            (item) =>
+              item.status ===
+              'APPROVED'
+          )?.count ?? 0
+        );
+
+      const rejected =
+        Number(
+          requestStats.find(
+            (item) =>
+              item.status ===
+              'REJECTED'
+          )?.count ?? 0
+        );
+
+      const cancelled =
+        Number(
+          requestStats.find(
+            (item) =>
+              item.status ===
+              'CANCELLED'
+          )?.count ?? 0
+        );
+
+      const approvedDaysResult =
+        await db('leave_requests')
+          .where(
+            'status',
+            'APPROVED'
+          )
+          .sum({
+            total: 'days',
+          })
+          .first();
+
+      const upcomingResult =
+        await db('leave_requests')
+          .where(
+            'status',
+            'APPROVED'
+          )
+          .where(
+            'start_date',
+            '>=',
+            new Date()
+          )
+          .count('* as count')
+          .first();
+
+      res.json({
+        totalEmployees:
+          Number(
+            totalEmployeesResult?.count ??
+              0
+          ),
+
+        totalRequests,
+
+        pending,
+
+        approved,
+
+        rejected,
+
+        cancelled,
+
+        approvedDays:
+          Number(
+            approvedDaysResult?.total ??
+              0
+          ),
+
+        upcomingLeaves:
+          Number(
+            upcomingResult?.count ??
+              0
+          ),
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   HR LEAVE REQUEST DIRECTORY
+========================================================= */
+
+r.get(
+  '/leave/hr/requests',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const requests =
+        await db('leave_requests')
+          .leftJoin(
+            'employees',
+            'leave_requests.employee_id',
+            'employees.id'
+          )
+          .leftJoin(
+            'users',
+            'employees.user_id',
+            'users.id'
+          )
+          .leftJoin(
+            'leave_types',
+            'leave_requests.leave_type_id',
+            'leave_types.id'
+          )
+          .leftJoin(
+            'users as approver',
+            'leave_requests.approved_by',
+            'approver.id'
+          )
+          .select(
+            'leave_requests.*',
+
+            'employees.employee_code',
+
+            'employees.department_id',
+
+            'employees.designation',
+
+            'users.first_name as employee_first_name',
+
+            'users.last_name as employee_last_name',
+
+            'users.email as employee_email',
+
+            'leave_types.name as leave_type',
+
+            'leave_types.is_paid',
+
+            'approver.first_name as approver_first_name',
+
+            'approver.last_name as approver_last_name'
+          )
+          .orderBy(
+            'leave_requests.created_at',
+            'desc'
+          );
+
+      res.json(requests);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   HR LEAVE TYPES
+========================================================= */
+
+r.get(
+  '/leave/hr/types',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const types =
+        await db('leave_types')
+          .select('*')
+          .orderBy(
+            'name',
+            'asc'
+          );
+
+      res.json(types);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   CREATE LEAVE TYPE
+========================================================= */
+
+r.post(
+  '/leave/hr/types',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const {
+        name,
+        annualDays,
+        isPaid,
+      } = req.body;
+
+      const normalizedName =
+        String(
+          name ?? ''
+        ).trim();
+
+      const days =
+        Number(
+          annualDays
+        );
+
+      if (!normalizedName) {
+        return res.status(400).json({
+          message:
+            'Leave type name is required',
+        });
+      }
+
+      if (
+        !Number.isFinite(days) ||
+        days < 0
+      ) {
+        return res.status(400).json({
+          message:
+            'Annual days must be a valid positive number',
+        });
+      }
+
+      const existing =
+        await db('leave_types')
+          .whereRaw(
+            'LOWER(name) = LOWER(?)',
+            [normalizedName]
+          )
+          .first();
+
+      if (existing) {
+        return res.status(409).json({
+          message:
+            'A leave type with this name already exists',
+        });
+      }
+
+      const [leaveType] =
+        await db('leave_types')
+          .insert({
+            name:
+              normalizedName,
+
+            annual_days:
+              Math.floor(days),
+
+            is_paid:
+              isPaid !== false,
+
+            created_at:
+              new Date(),
+
+            updated_at:
+              new Date(),
+          })
+          .returning('*');
+
+      res.status(201).json(
+        leaveType
+      );
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   UPDATE LEAVE TYPE
+========================================================= */
+
+r.patch(
+  '/leave/hr/types/:id',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id) ||
+        id <= 0
+      ) {
+        return res.status(400).json({
+          message:
+            'Invalid leave type ID',
+        });
+      }
+
+      const existing =
+        await db('leave_types')
+          .where(
+            'id',
+            id
+          )
+          .first();
+
+      if (!existing) {
+        return res.status(404).json({
+          message:
+            'Leave type not found',
+        });
+      }
+
+      const updateData: Record<
+        string,
+        any
+      > = {
+        updated_at:
+          new Date(),
+      };
+
+      if (
+        req.body.name !==
+        undefined
+      ) {
+        const name =
+          String(
+            req.body.name
+          ).trim();
+
+        if (!name) {
+          return res.status(400).json({
+            message:
+              'Leave type name cannot be empty',
+          });
+        }
+
+        updateData.name =
+          name;
+      }
+
+      if (
+        req.body.annualDays !==
+        undefined
+      ) {
+        const days =
+          Number(
+            req.body.annualDays
+          );
+
+        if (
+          !Number.isFinite(days) ||
+          days < 0
+        ) {
+          return res.status(400).json({
+            message:
+              'Annual days must be valid',
+          });
+        }
+
+        updateData.annual_days =
+          Math.floor(days);
+      }
+
+      if (
+        req.body.isPaid !==
+        undefined
+      ) {
+        updateData.is_paid =
+          Boolean(
+            req.body.isPaid
+          );
+      }
+
+      const [updated] =
+        await db('leave_types')
+          .where(
+            'id',
+            id
+          )
+          .update(
+            updateData
+          )
+          .returning('*');
+
+      res.json(
+        updated
+      );
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   DELETE LEAVE TYPE
+========================================================= */
+
+r.delete(
+  '/leave/hr/types/:id',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id) ||
+        id <= 0
+      ) {
+        return res.status(400).json({
+          message:
+            'Invalid leave type ID',
+        });
+      }
+
+      const usage =
+        await db('leave_requests')
+          .where(
+            'leave_type_id',
+            id
+          )
+          .count('* as count')
+          .first();
+
+      if (
+        Number(
+          usage?.count ?? 0
+        ) > 0
+      ) {
+        return res.status(409).json({
+          message:
+            'This leave type is already used by leave requests and cannot be deleted.',
+        });
+      }
+
+      const deleted =
+        await db('leave_types')
+          .where(
+            'id',
+            id
+          )
+          .del();
+
+      if (!deleted) {
+        return res.status(404).json({
+          message:
+            'Leave type not found',
+        });
+      }
+
+      res.json({
+        message:
+          'Leave type deleted successfully',
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   HR EMPLOYEE LEAVE BALANCES
+========================================================= */
+
+r.get(
+  '/leave/hr/balances',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const employees =
+        await db('employees')
+          .leftJoin(
+            'users',
+            'employees.user_id',
+            'users.id'
+          )
+          .leftJoin(
+            'departments',
+            'employees.department_id',
+            'departments.id'
+          )
+          .select(
+            'employees.id',
+            'employees.employee_code',
+            'employees.designation',
+            'employees.status',
+            'users.first_name',
+            'users.last_name',
+            'users.email',
+            'departments.name as department'
+          )
+          .whereNot(
+            'employees.status',
+            'TERMINATED'
+          )
+          .orderBy(
+            'users.first_name',
+            'asc'
+          );
+
+      const leaveTypes =
+        await db('leave_types')
+          .select('*')
+          .orderBy(
+            'name',
+            'asc'
+          );
+
+      const approvedUsage =
+        (await db(
+          'leave_requests'
+        )
+          .where(
+            'status',
+            'APPROVED'
+          )
+          .select(
+            'employee_id',
+            'leave_type_id'
+          )
+          .sum({
+            used_days:
+              'days',
+          })
+          .groupBy(
+            'employee_id',
+            'leave_type_id'
+          )) as Array<{
+            employee_id:
+              number;
+            leave_type_id:
+              number;
+            used_days:
+              number | string | null;
+          }>;
+
+      const pendingUsage =
+        (await db(
+          'leave_requests'
+        )
+          .where(
+            'status',
+            'PENDING'
+          )
+          .select(
+            'employee_id',
+            'leave_type_id'
+          )
+          .sum({
+            pending_days:
+              'days',
+          })
+          .groupBy(
+            'employee_id',
+            'leave_type_id'
+          )) as Array<{
+            employee_id:
+              number;
+            leave_type_id:
+              number;
+            pending_days:
+              number | string | null;
+          }>;
+
+      const adjustments =
+        (await db(
+          'leave_adjustments'
+        )
+          .select(
+            'employee_id',
+            'leave_type_id'
+          )
+          .sum({
+            adjustment_days:
+              'amount',
+          })
+          .groupBy(
+            'employee_id',
+            'leave_type_id'
+          )) as Array<{
+            employee_id:
+              number;
+            leave_type_id:
+              number;
+            adjustment_days:
+              number | string | null;
+          }>;
+
+      const result =
+        employees.map(
+          (employee) => ({
+            employeeId:
+              employee.id,
+
+            employeeCode:
+              employee.employee_code,
+
+            employeeName:
+              `${employee.first_name ?? ''} ${
+                employee.last_name ?? ''
+              }`.trim(),
+
+            email:
+              employee.email,
+
+            department:
+              employee.department ??
+              '—',
+
+            designation:
+              employee.designation ??
+              '—',
+
+            balances:
+              leaveTypes.map(
+                (type) => {
+                  const usage =
+                    approvedUsage.find(
+                      (item) =>
+                        Number(
+                          item.employee_id
+                        ) ===
+                          Number(
+                            employee.id
+                          ) &&
+                        Number(
+                          item.leave_type_id
+                        ) ===
+                          Number(
+                            type.id
+                          )
+                    );
+
+                  const pending =
+                    pendingUsage.find(
+                      (item) =>
+                        Number(item.employee_id) ===
+                          Number(employee.id) &&
+                        Number(item.leave_type_id) ===
+                          Number(type.id)
+                    );
+
+                  const adjustment =
+                    adjustments.find(
+                      (item) =>
+                        Number(item.employee_id) ===
+                          Number(employee.id) &&
+                        Number(item.leave_type_id) ===
+                          Number(type.id)
+                    );
+
+                  const allocated =
+                    Number(
+                      type.annual_days
+                    );
+
+                  const used =
+                    Number(
+                      usage?.used_days ??
+                        0
+                    );
+
+                  const pendingDays =
+                    Number(
+                      pending?.pending_days ??
+                        0
+                    );
+
+                  const adjustmentDays =
+                    Number(
+                      adjustment?.adjustment_days ??
+                        0
+                    );
+
+                  const available =
+                    allocated +
+                    adjustmentDays -
+                    used -
+                    pendingDays;
+
+                  return {
+                    leaveTypeId:
+                      type.id,
+
+                    leaveType:
+                      type.name,
+
+                    allocated,
+                    used,
+                    pending: pendingDays,
+                    adjustments: adjustmentDays,
+
+                    available:
+                      Math.max(
+                        available,
+                        0
+                      ),
+                  };
+                }
+              ),
+          })
+        );
+
+      res.json(
+        result
+      );
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   HR LEAVE CALENDAR
+========================================================= */
+
+r.get(
+  '/leave/hr/calendar',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const leaves =
+        await db(
+          'leave_requests'
+        )
+          .leftJoin(
+            'employees',
+            'leave_requests.employee_id',
+            'employees.id'
+          )
+          .leftJoin(
+            'users',
+            'employees.user_id',
+            'users.id'
+          )
+          .leftJoin(
+            'leave_types',
+            'leave_requests.leave_type_id',
+            'leave_types.id'
+          )
+          .where(
+            'leave_requests.status',
+            'APPROVED'
+          )
+          .select(
+            'leave_requests.id',
+            'leave_requests.employee_id',
+            'leave_requests.start_date',
+            'leave_requests.end_date',
+            'leave_requests.days',
+            'users.first_name',
+            'users.last_name',
+            'employees.employee_code',
+            'leave_types.name as leave_type'
+          )
+          .orderBy(
+            'leave_requests.start_date',
+            'asc'
+          );
+
+      res.json(
+        leaves
+      );
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
+   HR LEAVE REPORTS
+========================================================= */
+
+r.get(
+  '/leave/hr/reports',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN'
+  ),
+  async (req, res, next) => {
+    try {
+      const byType =
+        await db(
+          'leave_requests'
+        )
+          .leftJoin(
+            'leave_types',
+            'leave_requests.leave_type_id',
+            'leave_types.id'
+          )
+          .select(
+            'leave_types.name as leave_type'
+          )
+          .count({
+            requests:
+              'leave_requests.id',
+          })
+          .sum({
+            days:
+              'leave_requests.days',
+          })
+          .where(
+            'leave_requests.status',
+            'APPROVED'
+          )
+          .groupBy(
+            'leave_types.name'
+          )
+          .orderBy(
+            'days',
+            'desc'
+          );
+
+      const byStatus =
+        await db(
+          'leave_requests'
+        )
+          .select(
+            'status'
+          )
+          .count({
+            requests:
+              'id',
+          })
+          .sum({
+            days:
+              'days',
+          })
+          .groupBy(
+            'status'
+          )
+          .orderBy(
+            'status',
+            'asc'
+          );
+
+      const monthly =
+        await db(
+          'leave_requests'
+        )
+          .select(
+            db.raw(
+              "TO_CHAR(start_date, 'YYYY-MM') as month"
+            )
+          )
+          .count({
+            requests:
+              'id',
+          })
+          .sum({
+            days:
+              'days',
+          })
+          .where(
+            'status',
+            'APPROVED'
+          )
+          .groupBy(
+            db.raw(
+              "TO_CHAR(start_date, 'YYYY-MM')"
+            )
+          )
+          .orderBy(
+            'month',
+            'desc'
+          );
+
+      res.json({
+        byType,
+        byStatus,
+        monthly,
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/* =========================================================
    ANNOUNCEMENTS
 ========================================================= */
 
@@ -1773,7 +2725,9 @@ r.get(
             'desc'
           );
 
-      res.json(announcements);
+      res.json(
+        announcements
+      );
     } catch (e) {
       next(e);
     }
@@ -1844,17 +2798,35 @@ r.get(
   ),
   async (req, res, next) => {
     try {
+      // LOP (Loss of Pay) is a built-in system leave type.
+      // It is created automatically if it does not already exist, so HR
+      // does not have to create it manually before employees can use it.
+      const existingLop = await db('leave_types')
+        .whereRaw('LOWER(name) = LOWER(?)', ['LOP'])
+        .first();
+
+      if (!existingLop) {
+        await db('leave_types').insert({
+          name: 'LOP',
+          annual_days: 0,
+          is_paid: false,
+        });
+      }
+
       const leaveTypes =
         await db(
           'leave_types'
         )
           .select('*')
+          .where('is_active', true)
           .orderBy(
             'name',
             'asc'
           );
 
-      res.json(leaveTypes);
+      res.json(
+        leaveTypes
+      );
     } catch (e) {
       next(e);
     }
@@ -1864,6 +2836,120 @@ r.get(
 /* =========================================================
    MY LEAVE
 ========================================================= */
+
+/* =========================================================
+   MY LEAVE BALANCES
+   GET /api/leave/me/balances
+
+   Includes HR manual adjustments in the employee's
+   available balance.
+========================================================= */
+
+r.get(
+  '/leave/me/balances',
+  auth,
+  role(
+    'SUPER_ADMIN',
+    'HR_ADMIN',
+    'MANAGER',
+    'PAYROLL',
+    'EMPLOYEE'
+  ),
+  async (req, res, next) => {
+    try {
+      const employee =
+        await db('employees')
+          .where(
+            'user_id',
+            req.user?.id
+          )
+          .first();
+
+      if (!employee) {
+        return res
+          .status(404)
+          .json({
+            message:
+              'Employee profile not found',
+          });
+      }
+
+      const leaveTypes =
+        await db('leave_types')
+          .select('*')
+          .orderBy('name', 'asc');
+
+      const approvedUsage =
+        (await db('leave_requests')
+          .where('employee_id', employee.id)
+          .where('status', 'APPROVED')
+          .select('leave_type_id')
+          .sum({ used_days: 'days' })
+          .groupBy('leave_type_id')) as Array<{
+            leave_type_id: number;
+            used_days: number | string | null;
+          }>;
+
+      const pendingUsage =
+        (await db('leave_requests')
+          .where('employee_id', employee.id)
+          .where('status', 'PENDING')
+          .select('leave_type_id')
+          .sum({ pending_days: 'days' })
+          .groupBy('leave_type_id')) as Array<{
+            leave_type_id: number;
+            pending_days: number | string | null;
+          }>;
+
+      const adjustmentUsage =
+        (await db('leave_adjustments')
+          .where('employee_id', employee.id)
+          .select('leave_type_id')
+          .sum({ adjustment_days: 'amount' })
+          .groupBy('leave_type_id')) as Array<{
+            leave_type_id: number;
+            adjustment_days: number | string | null;
+          }>;
+
+      const balances = leaveTypes.map((type) => {
+        const usedRow = approvedUsage.find(
+          (row) => Number(row.leave_type_id) === Number(type.id)
+        );
+        const pendingRow = pendingUsage.find(
+          (row) => Number(row.leave_type_id) === Number(type.id)
+        );
+        const adjustmentRow = adjustmentUsage.find(
+          (row) => Number(row.leave_type_id) === Number(type.id)
+        );
+
+        const allocated = Number(type.annual_days ?? 0);
+        const used = Number(usedRow?.used_days ?? 0);
+        const pending = Number(pendingRow?.pending_days ?? 0);
+        const adjustments = Number(
+          adjustmentRow?.adjustment_days ?? 0
+        );
+        const available = Math.max(
+          allocated + adjustments - used - pending,
+          0
+        );
+
+        return {
+          leaveTypeId: type.id,
+          leaveType: type.name,
+          allocated,
+          used,
+          pending,
+          adjustments,
+          available,
+        };
+      });
+
+      res.json(balances);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 r.get(
   '/leave/me',
@@ -1900,16 +2986,27 @@ r.get(
         await db(
           'leave_requests'
         )
+          .leftJoin(
+            'leave_types',
+            'leave_requests.leave_type_id',
+            'leave_types.id'
+          )
+          .select(
+            'leave_requests.*',
+            'leave_types.name as leave_type'
+          )
           .where(
-            'employee_id',
+            'leave_requests.employee_id',
             employee.id
           )
           .orderBy(
-            'created_at',
+            'leave_requests.created_at',
             'desc'
           );
 
-      res.json(leaves);
+      res.json(
+        leaves
+      );
     } catch (e) {
       next(e);
     }
@@ -1971,6 +3068,101 @@ r.post(
           });
       }
 
+      const parsedLeaveTypeId =
+        Number(
+          leaveTypeId
+        );
+
+      if (
+        !Number.isInteger(
+          parsedLeaveTypeId
+        ) ||
+        parsedLeaveTypeId <= 0
+      ) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'Invalid leave type',
+          });
+      }
+
+      const leaveType =
+        await db('leave_types')
+          .where(
+            'id',
+            parsedLeaveTypeId
+          )
+          .first();
+
+      if (!leaveType) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'Selected leave type does not exist',
+          });
+      }
+
+      const start =
+        new Date(
+          `${startDate}T00:00:00`
+        );
+
+      const end =
+        new Date(
+          `${endDate}T00:00:00`
+        );
+
+      if (
+        Number.isNaN(
+          start.getTime()
+        ) ||
+        Number.isNaN(
+          end.getTime()
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'Invalid leave dates',
+          });
+      }
+
+      if (end < start) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'End date cannot be before start date',
+          });
+      }
+
+      const millisecondsPerDay =
+        1000 *
+        60 *
+        60 *
+        24;
+
+      const days =
+        Math.floor(
+          (
+            end.getTime() -
+            start.getTime()
+          ) /
+            millisecondsPerDay
+        ) + 1;
+
+      if (days <= 0) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'Leave duration must be at least one day',
+          });
+      }
+
       const [leave] =
         await db(
           'leave_requests'
@@ -1980,7 +3172,7 @@ r.post(
               employee.id,
 
             leave_type_id:
-              leaveTypeId,
+              parsedLeaveTypeId,
 
             start_date:
               startDate,
@@ -1988,11 +3180,26 @@ r.post(
             end_date:
               endDate,
 
+            days,
+
             reason:
-              reason || null,
+              reason
+                ? String(
+                    reason
+                  ).trim()
+                : null,
 
             status:
               'PENDING',
+
+            approved_by:
+              null,
+
+            created_at:
+              new Date(),
+
+            updated_at:
+              new Date(),
           })
           .returning('*');
 
@@ -2006,7 +3213,7 @@ r.post(
 );
 
 /* =========================================================
-   LEAVE STATUS
+   LEAVE STATUS / APPROVAL
 ========================================================= */
 
 r.patch(
@@ -2019,16 +3226,36 @@ r.patch(
   ),
   async (req, res, next) => {
     try {
+      const leaveId =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(
+          leaveId
+        ) ||
+        leaveId <= 0
+      ) {
+        return res
+          .status(400)
+          .json({
+            message:
+              'Invalid leave request ID',
+          });
+      }
+
       const {
         status,
       } = req.body;
 
-      const allowedStatuses = [
-        'PENDING',
-        'APPROVED',
-        'REJECTED',
-        'CANCELLED',
-      ];
+      const allowedStatuses =
+        [
+          'PENDING',
+          'APPROVED',
+          'REJECTED',
+          'CANCELLED',
+        ];
 
       if (
         !allowedStatuses.includes(
@@ -2043,21 +3270,55 @@ r.patch(
           });
       }
 
+      const existingLeave =
+        await db(
+          'leave_requests'
+        )
+          .where(
+            'id',
+            leaveId
+          )
+          .first();
+
+      if (!existingLeave) {
+        return res
+          .status(404)
+          .json({
+            message:
+              'Leave request not found',
+          });
+      }
+
+      const updateData: Record<
+        string,
+        any
+      > = {
+        status,
+
+        updated_at:
+          new Date(),
+
+        approved_by:
+          status ===
+            'APPROVED' ||
+          status ===
+            'REJECTED'
+            ? req.user?.id ??
+              null
+            : null,
+      };
+
       const [updatedLeave] =
         await db(
           'leave_requests'
         )
           .where(
             'id',
-            Number(
-              req.params.id
-            )
+            leaveId
           )
-          .update({
-            status,
-            updated_at:
-              new Date(),
-          })
+          .update(
+            updateData
+          )
           .returning('*');
 
       if (!updatedLeave) {
@@ -2132,7 +3393,9 @@ r.get(
           });
       }
 
-      res.json(salary);
+      res.json(
+        salary
+      );
     } catch (e) {
       next(e);
     }
